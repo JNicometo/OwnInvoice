@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OwnInvoice Desktop - User Manual</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #c8a96e;
+      --navy: #0a0f1e;
+      --dark: #1a1f2e;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --border: #e2e8f0;
+      --bg-light: #f8fafc;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.7;
+      background: #fff;
+    }
+
+    /* Cover Page */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--navy) 0%, #141928 100%);
+      color: #fff;
+      text-align: center;
+      padding: 60px 40px;
+    }
+    .cover-logo {
+      width: 120px;
+      height: 120px;
+      background: rgba(200,169,110,0.15);
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 40px;
+      border: 2px solid rgba(200,169,110,0.3);
+    }
+    .cover-logo svg { width: 60px; height: 60px; }
+    .cover h1 {
+      font-size: 48px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+    .cover h1 span { color: var(--gold); }
+    .cover .subtitle {
+      font-size: 20px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 48px;
+    }
+    .cover .manual-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .cover .version {
+      font-size: 15px;
+      color: rgba(255,255,255,0.4);
+    }
+    .cover .company {
+      margin-top: 60px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* Content area */
+    .content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 60px 40px;
+    }
+
+    /* Table of Contents */
+    .toc {
+      page-break-after: always;
+    }
+    .toc h2 {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 3px solid var(--gold);
+    }
+    .toc-list {
+      list-style: none;
+      counter-reset: toc-counter;
+    }
+    .toc-list li {
+      counter-increment: toc-counter;
+      margin-bottom: 8px;
+    }
+    .toc-list li a {
+      display: flex;
+      align-items: baseline;
+      text-decoration: none;
+      color: var(--text);
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      transition: color 0.2s;
+    }
+    .toc-list li a:hover { color: var(--gold); }
+    .toc-list li a::before {
+      content: counter(toc-counter) ".";
+      font-weight: 800;
+      color: var(--gold);
+      min-width: 36px;
+      font-size: 15px;
+    }
+    .toc-list li a span {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    /* Section Headers */
+    .section {
+      page-break-before: always;
+      margin-bottom: 48px;
+    }
+    .section:first-of-type { page-break-before: auto; }
+
+    .section-header {
+      background: var(--navy);
+      color: #fff;
+      padding: 32px 40px;
+      margin: 0 -40px 32px;
+      border-radius: 0;
+    }
+    .section-number {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .section-header h2 {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .section-header p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 6px;
+    }
+
+    /* Content elements */
+    h3 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--navy);
+      margin: 32px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+    h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 20px 0 8px;
+    }
+    p {
+      margin-bottom: 12px;
+      color: var(--text-secondary);
+    }
+    ul, ol {
+      margin: 0 0 16px 24px;
+      color: var(--text-secondary);
+    }
+    li { margin-bottom: 6px; }
+    li strong { color: var(--text); }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0 24px;
+    }
+    .feature-card {
+      background: var(--bg-light);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .feature-card h4 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    .feature-card p {
+      font-size: 13px;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .shortcut-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px;
+      font-size: 13px;
+    }
+    .shortcut-table th {
+      text-align: left;
+      padding: 10px 16px;
+      background: var(--navy);
+      color: #fff;
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .shortcut-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .shortcut-table tr:nth-child(even) td {
+      background: var(--bg-light);
+    }
+    kbd {
+      background: var(--bg-light);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    .tip {
+      background: rgba(200,169,110,0.08);
+      border-left: 4px solid var(--gold);
+      padding: 16px 20px;
+      margin: 16px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .tip strong {
+      color: var(--gold);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .tip p { margin: 4px 0 0; font-size: 13px; }
+
+    .note {
+      background: rgba(59,130,246,0.06);
+      border-left: 4px solid #3b82f6;
+      padding: 16px 20px;
+      margin: 16px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .note strong {
+      color: #3b82f6;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .note p { margin: 4px 0 0; font-size: 13px; }
+
+    .steps {
+      counter-reset: step-counter;
+      list-style: none;
+      margin-left: 0;
+    }
+    .steps li {
+      counter-increment: step-counter;
+      position: relative;
+      padding-left: 48px;
+      margin-bottom: 16px;
+      min-height: 32px;
+    }
+    .steps li::before {
+      content: counter(step-counter);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 32px;
+      height: 32px;
+      background: var(--gold);
+      color: var(--navy);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    /* Print styles */
+    @media print {
+      body { font-size: 11pt; }
+      .cover { min-height: 100vh; }
+      .section { page-break-before: always; }
+      .section-header {
+        margin: 0 -40px 24px;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .feature-grid { grid-template-columns: 1fr 1fr; }
+      .shortcut-table th {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .tip, .note {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cover Page -->
+  <div class="cover">
+    <div class="cover-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#c8a96e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+    </div>
+    <h1>Own<span>Invoice</span></h1>
+    <div class="subtitle">Desktop</div>
+    <div class="manual-title">User Manual</div>
+    <div class="version">Version 1.0.0</div>
+    <div class="company">&copy; 2026 Grit Software &middot; gritsoftware.dev</div>
+  </div>
+
+  <!-- Table of Contents -->
+  <div class="content">
+    <div class="toc">
+      <h2>Table of Contents</h2>
+      <ol class="toc-list">
+        <li><a href="#getting-started"><span>Getting Started</span></a></li>
+        <li><a href="#dashboard"><span>Dashboard</span></a></li>
+        <li><a href="#invoices"><span>Invoices</span></a></li>
+        <li><a href="#quotes"><span>Quotes & Estimates</span></a></li>
+        <li><a href="#credit-notes"><span>Credit Notes</span></a></li>
+        <li><a href="#clients"><span>Client Management</span></a></li>
+        <li><a href="#saved-items"><span>Saved Items</span></a></li>
+        <li><a href="#recurring"><span>Recurring Invoices</span></a></li>
+        <li><a href="#reminders"><span>Reminders</span></a></li>
+        <li><a href="#reports"><span>Reports & Analytics</span></a></li>
+        <li><a href="#payments"><span>Payments & Payment Gateways</span></a></li>
+        <li><a href="#email"><span>Email</span></a></li>
+        <li><a href="#pdf"><span>PDF & Printing</span></a></li>
+        <li><a href="#settings"><span>Settings & Configuration</span></a></li>
+        <li><a href="#backup"><span>Backup & Restore</span></a></li>
+        <li><a href="#archive"><span>Archive</span></a></li>
+        <li><a href="#search"><span>Search & Filtering</span></a></li>
+        <li><a href="#shortcuts"><span>Keyboard Shortcuts</span></a></li>
+      </ol>
+    </div>
+
+    <!-- 1. Getting Started -->
+    <div class="section" id="getting-started">
+      <div class="section-header">
+        <div class="section-number">Section 1</div>
+        <h2>Getting Started</h2>
+        <p>Installation, first launch, and initial configuration</p>
+      </div>
+
+      <h3>System Requirements</h3>
+      <ul>
+        <li><strong>Windows:</strong> Windows 10 or later</li>
+        <li><strong>macOS:</strong> macOS 10.15 (Catalina) or later</li>
+        <li><strong>Storage:</strong> 200 MB free disk space</li>
+        <li><strong>Internet:</strong> Not required (needed only for email and online payments)</li>
+      </ul>
+
+      <h3>Installation</h3>
+      <ol class="steps">
+        <li>Download OwnInvoice Desktop from your purchase email or the OwnInvoice website.</li>
+        <li>Run the installer. On macOS, drag the app to your Applications folder. On Windows, follow the setup wizard.</li>
+        <li>Launch OwnInvoice Desktop. The application will create a local database on first run.</li>
+        <li>Enter your license key when prompted to activate the full version.</li>
+      </ol>
+
+      <h3>Initial Setup</h3>
+      <p>After launching OwnInvoice for the first time, head to <strong>Settings</strong> to configure your company information:</p>
+      <ol class="steps">
+        <li>Enter your <strong>company name, address, email, and phone number</strong>. This information appears on all invoices.</li>
+        <li>Upload your <strong>company logo</strong>. It will be displayed on invoices and quotes.</li>
+        <li>Set your <strong>tax rate</strong> and <strong>currency</strong> under Tax & Currency settings.</li>
+        <li>Configure your <strong>invoice numbering</strong> format (prefix, starting number).</li>
+        <li>Set up <strong>email (SMTP)</strong> if you want to send invoices and reminders by email.</li>
+      </ol>
+
+      <div class="tip">
+        <strong>Tip</strong>
+        <p>Your data is stored locally on your computer. No cloud account or internet connection is required for core invoicing features.</p>
+      </div>
+    </div>
+
+    <!-- 2. Dashboard -->
+    <div class="section" id="dashboard">
+      <div class="section-header">
+        <div class="section-number">Section 2</div>
+        <h2>Dashboard</h2>
+        <p>Your business at a glance</p>
+      </div>
+
+      <p>The Dashboard is the first screen you see when opening OwnInvoice. It provides an overview of your invoicing activity.</p>
+
+      <h3>Stats Cards</h3>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>Total Revenue</h4>
+          <p>The total amount collected from all paid invoices.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Total Invoices</h4>
+          <p>The total number of invoices you've created.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Paid</h4>
+          <p>Total amount paid with a percentage of your total invoiced amount.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Pending</h4>
+          <p>Amount awaiting payment from clients.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Overdue</h4>
+          <p>Amount past the due date, highlighted in red for attention.</p>
+        </div>
+      </div>
+
+      <p>Click any stat card to jump directly to the Invoices list filtered by that status.</p>
+
+      <h3>Recent Invoices</h3>
+      <p>The dashboard shows your 5 most recent invoices with quick-action buttons to <strong>Edit</strong> or <strong>View</strong> each one.</p>
+
+      <h3>Navigation</h3>
+      <p>Use the sidebar on the left to navigate between sections. The sidebar can be customized in Settings to show, hide, or reorder tabs.</p>
+    </div>
+
+    <!-- 3. Invoices -->
+    <div class="section" id="invoices">
+      <div class="section-header">
+        <div class="section-number">Section 3</div>
+        <h2>Invoices</h2>
+        <p>Create, manage, and track professional invoices</p>
+      </div>
+
+      <h3>Creating an Invoice</h3>
+      <ol class="steps">
+        <li>Click <strong>New Invoice</strong> from the Invoices page or press <kbd>Ctrl</kbd>+<kbd>N</kbd>.</li>
+        <li>Select a <strong>client</strong> from the dropdown or create a new one inline.</li>
+        <li>The <strong>invoice number</strong> is auto-generated based on your numbering settings. You can edit it if needed.</li>
+        <li>Set the <strong>invoice date</strong> and <strong>due date</strong>.</li>
+        <li>Add <strong>line items</strong> with description, quantity, rate, and optional discount per item.</li>
+        <li>Optionally add <strong>shipping costs</strong>, <strong>adjustments</strong>, and <strong>notes</strong>.</li>
+        <li>Click <strong>Save</strong> to save as a draft, or <strong>Save & Send</strong> to email it to the client.</li>
+      </ol>
+
+      <h3>Line Items</h3>
+      <p>Each line item on an invoice supports:</p>
+      <ul>
+        <li><strong>Description</strong> &mdash; What you're billing for</li>
+        <li><strong>Quantity</strong> &mdash; Number of units</li>
+        <li><strong>Rate</strong> &mdash; Price per unit</li>
+        <li><strong>Discount</strong> &mdash; Per-item discount (percentage or fixed amount)</li>
+        <li><strong>SKU</strong> &mdash; Stock keeping unit for inventory tracking</li>
+        <li><strong>Unit of Measure</strong> &mdash; Each, Hour, Day, Meter, Kilogram, etc.</li>
+      </ul>
+      <p>You can link items from your <strong>Saved Items</strong> library for quick entry.</p>
+
+      <h3>Invoice Totals</h3>
+      <ul>
+        <li><strong>Subtotal</strong> &mdash; Sum of all line items</li>
+        <li><strong>Discount</strong> &mdash; Invoice-level discount (percentage or fixed)</li>
+        <li><strong>Tax</strong> &mdash; Calculated from your tax rate setting</li>
+        <li><strong>Shipping</strong> &mdash; Optional shipping/delivery cost</li>
+        <li><strong>Adjustment</strong> &mdash; Positive or negative amount with a custom label</li>
+        <li><strong>Total</strong> &mdash; Final amount due</li>
+      </ul>
+
+      <h3>Invoice Statuses</h3>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>Draft</h4>
+          <p>Work in progress. Not yet sent to the client.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Pending</h4>
+          <p>Sent to the client, awaiting payment.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Paid</h4>
+          <p>Payment received in full.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Overdue</h4>
+          <p>Past the due date. Automatically detected.</p>
+        </div>
+      </div>
+
+      <h3>Batch Operations</h3>
+      <p>Select multiple invoices using the checkboxes to perform bulk actions:</p>
+      <ul>
+        <li><strong>Mark as Paid</strong> &mdash; Update selected invoices to paid status</li>
+        <li><strong>Archive</strong> &mdash; Move selected invoices to the archive</li>
+        <li><strong>Delete</strong> &mdash; Permanently remove selected invoices</li>
+      </ul>
+
+      <h3>Filtering & Sorting</h3>
+      <p>Use the status filter tabs (All, Draft, Pending, Paid, Overdue) to view specific invoice groups. Use the search bar to find invoices by number or client name.</p>
+    </div>
+
+    <!-- 4. Quotes -->
+    <div class="section" id="quotes">
+      <div class="section-header">
+        <div class="section-number">Section 4</div>
+        <h2>Quotes & Estimates</h2>
+        <p>Create proposals and convert them to invoices</p>
+      </div>
+
+      <h3>Creating a Quote</h3>
+      <p>Quotes work just like invoices, with a few differences:</p>
+      <ul>
+        <li>Quotes have a separate numbering system (e.g., QT-0001)</li>
+        <li>Quotes include an <strong>expiry date</strong> instead of a due date</li>
+        <li>Quotes use statuses: <strong>Draft</strong>, <strong>Sent</strong>, <strong>Accepted</strong>, <strong>Rejected</strong></li>
+      </ul>
+      <p>To create a quote, navigate to the Quotes section and click <strong>New Quote</strong>. Fill in the client, items, and amounts as you would for an invoice.</p>
+
+      <h3>Converting a Quote to an Invoice</h3>
+      <p>When a client accepts your quote, click the <strong>Convert to Invoice</strong> button. OwnInvoice will create a new invoice with all the quote's details pre-filled. The original quote is marked as accepted.</p>
+
+      <div class="tip">
+        <strong>Tip</strong>
+        <p>The converted invoice links back to the original quote for easy reference. You can find this link in the invoice details.</p>
+      </div>
+
+      <h3>Archiving Quotes</h3>
+      <p>Old or rejected quotes can be archived to keep your active list clean. Archived quotes can be restored at any time.</p>
+    </div>
+
+    <!-- 5. Credit Notes -->
+    <div class="section" id="credit-notes">
+      <div class="section-header">
+        <div class="section-number">Section 5</div>
+        <h2>Credit Notes</h2>
+        <p>Issue refunds and adjustments</p>
+      </div>
+
+      <h3>What are Credit Notes?</h3>
+      <p>Credit notes are used to issue partial or full refunds, correct billing errors, or provide credits to clients. Each credit note is linked to a specific invoice.</p>
+
+      <h3>Creating a Credit Note</h3>
+      <ol class="steps">
+        <li>Navigate to <strong>Credit Notes</strong> and click <strong>New Credit Note</strong>.</li>
+        <li>Select the <strong>invoice</strong> the credit applies to.</li>
+        <li>Choose a <strong>reason</strong> (refund, return, adjustment, billing error, etc.).</li>
+        <li>Add the <strong>items</strong> being credited with quantities and amounts.</li>
+        <li>Save as draft or issue immediately.</li>
+      </ol>
+
+      <h3>Credit Note Statuses</h3>
+      <ul>
+        <li><strong>Draft</strong> &mdash; Not yet issued to the client</li>
+        <li><strong>Issued</strong> &mdash; Applied to the invoice</li>
+      </ul>
+    </div>
+
+    <!-- 6. Client Management -->
+    <div class="section" id="clients">
+      <div class="section-header">
+        <div class="section-number">Section 6</div>
+        <h2>Client Management</h2>
+        <p>Manage your customers and their information</p>
+      </div>
+
+      <h3>Adding a Client</h3>
+      <p>Navigate to <strong>Clients</strong> and click <strong>New Client</strong>. Enter the client's details:</p>
+      <ul>
+        <li><strong>Name</strong> (required) and <strong>Email</strong> (required)</li>
+        <li><strong>Phone number</strong></li>
+        <li><strong>Address</strong> (street, city, state, zip)</li>
+        <li><strong>Website, Industry, Company Size</strong></li>
+        <li><strong>Contact person</strong> and title</li>
+        <li><strong>Secondary contact</strong> information</li>
+        <li><strong>Tax ID</strong> and tax exempt status</li>
+        <li><strong>Notes</strong> for internal reference</li>
+      </ul>
+
+      <h3>Customer Numbers</h3>
+      <p>Each client can have a unique customer number (e.g., CUST-0001). Enable customer numbers in Settings and choose your prefix.</p>
+
+      <h3>Credit Management</h3>
+      <p>Set credit limits and payment terms per client:</p>
+      <ul>
+        <li><strong>Credit Limit</strong> &mdash; Maximum outstanding balance allowed</li>
+        <li><strong>Payment Terms</strong> &mdash; NET 30, NET 60, Due on Receipt, etc.</li>
+        <li><strong>Default Discount Rate</strong> &mdash; Automatic discount for this client</li>
+      </ul>
+
+      <h3>Multiple Addresses</h3>
+      <p>Each client can have multiple billing and shipping addresses. Label them (Main, Warehouse, Branch Office, etc.) and mark one as default. When creating an invoice, select which address to use.</p>
+
+      <h3>CSV Import</h3>
+      <p>Import clients in bulk from a CSV file. OwnInvoice validates the data and reports any errors before importing.</p>
+
+      <h3>Client Statistics</h3>
+      <p>View per-client statistics including total invoices, revenue, outstanding balance, and last invoice date.</p>
+    </div>
+
+    <!-- 7. Saved Items -->
+    <div class="section" id="saved-items">
+      <div class="section-header">
+        <div class="section-number">Section 7</div>
+        <h2>Saved Items</h2>
+        <p>Your reusable product and service catalog</p>
+      </div>
+
+      <h3>What are Saved Items?</h3>
+      <p>Saved Items are a library of products and services you frequently bill for. Instead of typing item details every time, select from your saved items when creating an invoice.</p>
+
+      <h3>Creating a Saved Item</h3>
+      <ul>
+        <li><strong>Description</strong> &mdash; Name/description of the product or service</li>
+        <li><strong>Rate</strong> &mdash; Default selling price</li>
+        <li><strong>Category</strong> &mdash; General, Consulting, Development, Design, Marketing, Support, or Other</li>
+        <li><strong>SKU</strong> &mdash; Stock Keeping Unit for tracking</li>
+        <li><strong>Barcode</strong> &mdash; Product barcode if applicable</li>
+        <li><strong>Unit of Measure</strong> &mdash; Each, Hour, Day, Meter, Kilogram, Liter, etc.</li>
+        <li><strong>Cost Price</strong> &mdash; Your cost (used for markup calculation)</li>
+        <li><strong>Markup %</strong> &mdash; Desired markup percentage. The selling rate is auto-calculated from cost + markup.</li>
+        <li><strong>Taxable</strong> &mdash; Whether tax applies to this item</li>
+        <li><strong>Active</strong> &mdash; Active items appear in the item selector on invoices</li>
+      </ul>
+
+      <h3>Using Saved Items</h3>
+      <p>When adding line items to an invoice or quote, click the <strong>saved items selector</strong> to browse your catalog. Selecting an item auto-fills the description, rate, SKU, and unit of measure.</p>
+
+      <h3>CSV Import</h3>
+      <p>Import your product catalog from a CSV file for quick setup.</p>
+    </div>
+
+    <!-- 8. Recurring Invoices -->
+    <div class="section" id="recurring">
+      <div class="section-header">
+        <div class="section-number">Section 8</div>
+        <h2>Recurring Invoices</h2>
+        <p>Automate your regular billing</p>
+      </div>
+
+      <h3>Setting Up a Recurring Invoice</h3>
+      <ol class="steps">
+        <li>Navigate to <strong>Recurring Invoices</strong> and click <strong>New Recurring Invoice</strong>.</li>
+        <li>Select a <strong>client</strong> and give the recurring template a <strong>name</strong>.</li>
+        <li>Choose a <strong>frequency</strong>: Weekly, Bi-weekly, Monthly, Quarterly, or Yearly.</li>
+        <li>Set the <strong>start date</strong> and optional <strong>end date</strong>.</li>
+        <li>Add your <strong>line items</strong> with descriptions, quantities, and rates.</li>
+        <li>Add <strong>notes</strong> and <strong>payment terms</strong> as needed.</li>
+        <li>Click <strong>Save</strong> to activate.</li>
+      </ol>
+
+      <h3>How It Works</h3>
+      <p>OwnInvoice automatically checks for due recurring invoices every hour and on app startup. When a recurring invoice's next generation date arrives, a new invoice is created with:</p>
+      <ul>
+        <li>A new auto-generated invoice number</li>
+        <li>Today's date as the invoice date</li>
+        <li>Due date set to 30 days from today</li>
+        <li>All line items copied from the recurring template</li>
+        <li>Status set to <strong>Pending</strong></li>
+      </ul>
+      <p>After generation, the next generation date advances by the selected frequency.</p>
+
+      <h3>Manual Generation</h3>
+      <p>Click the <strong>Generate Now</strong> button on any active recurring invoice to immediately create an invoice from that template.</p>
+
+      <h3>Managing Recurring Invoices</h3>
+      <ul>
+        <li><strong>Edit</strong> &mdash; Update items, frequency, or dates</li>
+        <li><strong>Deactivate</strong> &mdash; Pause generation without deleting</li>
+        <li><strong>Delete</strong> &mdash; Remove the recurring template entirely</li>
+      </ul>
+    </div>
+
+    <!-- 9. Reminders -->
+    <div class="section" id="reminders">
+      <div class="section-header">
+        <div class="section-number">Section 9</div>
+        <h2>Reminders</h2>
+        <p>Automated and manual payment reminders</p>
+      </div>
+
+      <h3>Reminder Templates</h3>
+      <p>OwnInvoice includes three default reminder templates. You can edit these or create new ones:</p>
+      <ul>
+        <li><strong>Payment Due Soon</strong> &mdash; Sent 3 days before the due date</li>
+        <li><strong>Payment Overdue</strong> &mdash; Sent 7 days after the due date</li>
+        <li><strong>Second Reminder</strong> &mdash; Sent 14 days after the due date</li>
+      </ul>
+
+      <h4>Template Variables</h4>
+      <p>Use these variables in your email subject and body. They are automatically replaced with actual values:</p>
+      <table class="shortcut-table">
+        <tr><th>Variable</th><th>Replaced With</th></tr>
+        <tr><td><kbd>{invoice_number}</kbd></td><td>The invoice number (e.g., INV-1001)</td></tr>
+        <tr><td><kbd>{client_name}</kbd></td><td>The client's name</td></tr>
+        <tr><td><kbd>{total}</kbd></td><td>The invoice total amount</td></tr>
+        <tr><td><kbd>{due_date}</kbd></td><td>The invoice due date</td></tr>
+        <tr><td><kbd>{company_name}</kbd></td><td>Your company name</td></tr>
+      </table>
+
+      <h3>Sending Reminders Manually</h3>
+      <ol class="steps">
+        <li>Go to the <strong>Reminders</strong> section and select the <strong>Send Reminders</strong> tab.</li>
+        <li>You'll see a list of invoices that are due soon or overdue.</li>
+        <li>Click a <strong>template button</strong> next to any invoice to send that reminder.</li>
+        <li>Review the <strong>preview</strong> of the email that will be sent.</li>
+        <li>Click <strong>Send Reminder</strong>. The email is sent via SMTP with the invoice PDF attached.</li>
+      </ol>
+
+      <h3>Automatic Reminders</h3>
+      <p>OwnInvoice automatically checks for invoices needing reminders every 6 hours and on app startup. It matches invoices to the appropriate template based on the days before or after the due date, and sends the email automatically. Each template is only sent once per invoice to prevent spam.</p>
+
+      <h3>Reminder History</h3>
+      <p>View all sent reminders in the <strong>History</strong> tab, showing which template was used, when it was sent, and to which invoice.</p>
+
+      <div class="note">
+        <strong>Note</strong>
+        <p>Email reminders require SMTP to be configured in Settings. See the Email section for setup instructions.</p>
+      </div>
+    </div>
+
+    <!-- 10. Reports -->
+    <div class="section" id="reports">
+      <div class="section-header">
+        <div class="section-number">Section 10</div>
+        <h2>Reports & Analytics</h2>
+        <p>Track your revenue, clients, and business performance</p>
+      </div>
+
+      <h3>Revenue Overview</h3>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>Total Revenue</h4>
+          <p>All-time revenue from paid invoices.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Monthly Revenue</h4>
+          <p>Revenue collected in the current month.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Average Invoice</h4>
+          <p>Average value across all invoices.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Outstanding</h4>
+          <p>Total amount still owed to you.</p>
+        </div>
+      </div>
+
+      <h3>Charts</h3>
+      <ul>
+        <li><strong>Monthly Revenue Chart</strong> &mdash; A bar/line chart showing revenue over the past 12 months</li>
+        <li><strong>Revenue by Client</strong> &mdash; A pie chart showing your top clients by revenue with a full legend</li>
+      </ul>
+
+      <h3>CSV Export</h3>
+      <p>Export your data for use in spreadsheets or accounting software:</p>
+      <ul>
+        <li><strong>Monthly Revenue CSV</strong> &mdash; Month-by-month revenue breakdown</li>
+        <li><strong>All Invoices CSV</strong> &mdash; Complete invoice list with all details</li>
+      </ul>
+    </div>
+
+    <!-- 11. Payments -->
+    <div class="section" id="payments">
+      <div class="section-header">
+        <div class="section-number">Section 11</div>
+        <h2>Payments & Payment Gateways</h2>
+        <p>Record payments and accept online payments</p>
+      </div>
+
+      <h3>Recording a Payment</h3>
+      <p>When you receive payment for an invoice:</p>
+      <ol class="steps">
+        <li>Open the invoice and click <strong>Record Payment</strong>.</li>
+        <li>Enter the <strong>amount</strong> received.</li>
+        <li>Select the <strong>payment method</strong> (Cash, Check, Bank Transfer, Credit Card, etc.).</li>
+        <li>Enter a <strong>reference number</strong> (check number, transaction ID, etc.).</li>
+        <li>Add any <strong>notes</strong> and click <strong>Save</strong>.</li>
+      </ol>
+      <p>An invoice can have multiple partial payments. OwnInvoice automatically updates the invoice status to <strong>Paid</strong> when the total payments equal or exceed the invoice total.</p>
+
+      <h3>Payment Gateways</h3>
+      <p>OwnInvoice integrates with 5 payment gateways to let your clients pay online. Configure them in <strong>Settings &gt; Payment Gateways</strong>:</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>Stripe</h4>
+          <p>Accept credit/debit cards and more. Enter your API keys and enable.</p>
+        </div>
+        <div class="feature-card">
+          <h4>PayPal</h4>
+          <p>Accept PayPal payments. Enter Client ID and Secret.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Square</h4>
+          <p>Accept Square payments. Enter Access Token and Location ID.</p>
+        </div>
+        <div class="feature-card">
+          <h4>GoCardless</h4>
+          <p>Accept direct debit payments. Enter Access Token.</p>
+        </div>
+      </div>
+      <p><strong>Authorize.Net</strong> is also supported with API Login ID and Transaction Key.</p>
+
+      <p>Each gateway supports <strong>sandbox/test mode</strong> for testing before going live. Generate payment links from any invoice to share with your clients.</p>
+    </div>
+
+    <!-- 12. Email -->
+    <div class="section" id="email">
+      <div class="section-header">
+        <div class="section-number">Section 12</div>
+        <h2>Email</h2>
+        <p>Send invoices and reminders by email</p>
+      </div>
+
+      <h3>SMTP Configuration</h3>
+      <p>To send emails from OwnInvoice, configure your SMTP settings in <strong>Settings &gt; Email Configuration</strong>:</p>
+      <ul>
+        <li><strong>SMTP Host</strong> &mdash; Your email server (e.g., smtp.gmail.com)</li>
+        <li><strong>SMTP Port</strong> &mdash; Usually 587 (TLS) or 465 (SSL)</li>
+        <li><strong>Secure</strong> &mdash; Enable for SSL connections (port 465)</li>
+        <li><strong>Username</strong> &mdash; Your email address or SMTP username</li>
+        <li><strong>Password</strong> &mdash; Your email password or app-specific password</li>
+        <li><strong>From Name</strong> &mdash; The name that appears in the "From" field</li>
+        <li><strong>From Email</strong> &mdash; The email address that appears in the "From" field</li>
+      </ul>
+
+      <div class="tip">
+        <strong>Gmail Users</strong>
+        <p>Use smtp.gmail.com with port 587. You'll need to generate an App Password in your Google Account settings (Security &gt; 2-Step Verification &gt; App Passwords).</p>
+      </div>
+
+      <h3>Sending an Invoice by Email</h3>
+      <ol class="steps">
+        <li>Open an invoice and click <strong>Send Email</strong>.</li>
+        <li>The recipient is pre-filled with the client's email. Add CC/BCC if needed.</li>
+        <li>Edit the <strong>subject</strong> and <strong>body</strong> as needed (template variables are supported).</li>
+        <li>Click <strong>Send</strong>. The invoice PDF is automatically attached.</li>
+      </ol>
+
+      <h3>Email Templates</h3>
+      <p>Configure default email templates in Settings. Use the same template variables as reminders (<kbd>{invoice_number}</kbd>, <kbd>{client_name}</kbd>, <kbd>{total}</kbd>, etc.).</p>
+    </div>
+
+    <!-- 13. PDF & Printing -->
+    <div class="section" id="pdf">
+      <div class="section-header">
+        <div class="section-number">Section 13</div>
+        <h2>PDF & Printing</h2>
+        <p>Export professional invoices as PDF documents</p>
+      </div>
+
+      <h3>Saving as PDF</h3>
+      <p>Open any invoice and click <strong>Download PDF</strong>. OwnInvoice generates a professionally formatted PDF with your company branding, logo, and colors.</p>
+
+      <h3>PDF Customization</h3>
+      <p>Control the look of your PDFs in <strong>Settings</strong>:</p>
+      <ul>
+        <li><strong>Page Size</strong> &mdash; Letter, A4, Legal</li>
+        <li><strong>Margins</strong> &mdash; Small, Normal, Large</li>
+        <li><strong>Header Height</strong> &mdash; Compact, Normal, Spacious</li>
+        <li><strong>Logo</strong> &mdash; Show or hide your logo on invoices</li>
+        <li><strong>Company Address</strong> &mdash; Show or hide on invoices</li>
+        <li><strong>Border Style</strong> &mdash; Subtle, Bold, or None</li>
+      </ul>
+
+      <h3>Invoice Template Styles</h3>
+      <p>Choose from multiple invoice layouts and customize the appearance:</p>
+      <ul>
+        <li><strong>Template</strong> &mdash; Modern, Classic, and more</li>
+        <li><strong>Header Style</strong> &mdash; Left-aligned, centered, or right-aligned</li>
+        <li><strong>Table Style</strong> &mdash; Striped, gridded, or plain</li>
+        <li><strong>Fonts</strong> &mdash; Separate heading and body font selection</li>
+        <li><strong>Colors</strong> &mdash; Invoice accent color, header color, text colors</li>
+        <li><strong>Corner Style</strong> &mdash; Rounded or square</li>
+        <li><strong>Spacing</strong> &mdash; Compact, normal, or spacious</li>
+      </ul>
+
+      <h3>What Appears on the Invoice</h3>
+      <p>Control which fields appear on printed invoices in <strong>Settings &gt; Invoice Display</strong>:</p>
+      <ul>
+        <li>Client email, phone, billing address, shipping address, tax ID</li>
+        <li>Item SKU and unit of measure</li>
+        <li>Customer numbers</li>
+        <li>Tax breakdown</li>
+        <li>Payment terms and bank details</li>
+      </ul>
+    </div>
+
+    <!-- 14. Settings -->
+    <div class="section" id="settings">
+      <div class="section-header">
+        <div class="section-number">Section 14</div>
+        <h2>Settings & Configuration</h2>
+        <p>Customize OwnInvoice to fit your business</p>
+      </div>
+
+      <h3>Company Information</h3>
+      <p>Set your company name, address, contact details, tax ID, and business registration number. Upload your logo for use on invoices.</p>
+
+      <h3>Invoice Numbering</h3>
+      <ul>
+        <li><strong>Prefix</strong> &mdash; Text before the number (e.g., INV-)</li>
+        <li><strong>Suffix</strong> &mdash; Text after the number</li>
+        <li><strong>Starting Number</strong> &mdash; Where numbering begins</li>
+        <li><strong>Quote Prefix</strong> &mdash; Separate prefix for quotes (e.g., QT-)</li>
+      </ul>
+
+      <h3>Tax & Currency</h3>
+      <ul>
+        <li><strong>Tax Rate</strong> &mdash; Default tax percentage applied to invoices</li>
+        <li><strong>Tax Label</strong> &mdash; "Tax", "VAT", "GST", etc.</li>
+        <li><strong>Currency Symbol</strong> and <strong>Currency Code</strong></li>
+        <li><strong>Number Formatting</strong> &mdash; Decimal and thousand separators</li>
+        <li><strong>Date Format</strong> &mdash; MM/DD/YYYY, DD/MM/YYYY, YYYY-MM-DD, etc.</li>
+      </ul>
+
+      <h3>Payment Defaults</h3>
+      <ul>
+        <li><strong>Default Due Days</strong> &mdash; Number of days until payment is due (default: 30)</li>
+        <li><strong>Payment Terms</strong> &mdash; Default terms text on invoices</li>
+        <li><strong>Bank Details</strong> &mdash; Bank account info displayed on invoices</li>
+        <li><strong>Invoice Footer</strong> &mdash; Custom footer message (e.g., "Thank you for your business!")</li>
+      </ul>
+
+      <h3>Theme & Appearance</h3>
+      <ul>
+        <li><strong>Dark Mode</strong> &mdash; Off, On, or follow system preference</li>
+        <li><strong>Color Palette</strong> &mdash; Primary, secondary, accent colors for the app</li>
+        <li><strong>Invoice Colors</strong> &mdash; Header color, accent color, text colors for PDFs</li>
+        <li><strong>Fonts</strong> &mdash; Heading font and body font selection</li>
+      </ul>
+
+      <h3>Navigation Customization</h3>
+      <p>Choose which sidebar tabs are visible and reorder them to match your workflow. Enable or disable sections like Quotes, Credit Notes, Recurring Invoices, Reports, etc.</p>
+
+      <h3>Database</h3>
+      <p>OwnInvoice uses SQLite by default (no setup required). For advanced use, you can connect to MySQL, PostgreSQL, or SQL Server by entering your database connection details.</p>
+    </div>
+
+    <!-- 15. Backup -->
+    <div class="section" id="backup">
+      <div class="section-header">
+        <div class="section-number">Section 15</div>
+        <h2>Backup & Restore</h2>
+        <p>Protect your business data</p>
+      </div>
+
+      <h3>Automatic Backups</h3>
+      <p>Configure automatic backups in <strong>Settings &gt; Backup</strong>:</p>
+      <ul>
+        <li><strong>Enable/Disable</strong> automatic backups</li>
+        <li><strong>Schedule</strong> &mdash; Daily, weekly, or monthly</li>
+        <li><strong>Time</strong> &mdash; What time of day to run the backup</li>
+        <li><strong>Day</strong> &mdash; Day of week (weekly) or day of month (monthly)</li>
+        <li><strong>Retention</strong> &mdash; How many days to keep old backups</li>
+        <li><strong>Location</strong> &mdash; Choose where backup files are saved</li>
+      </ul>
+
+      <h3>Manual Backup</h3>
+      <p>Create a backup at any time by clicking <strong>Backup Now</strong> in the Backup settings.</p>
+
+      <h3>Restoring from Backup</h3>
+      <p>To restore from a backup, click <strong>Restore</strong> and select a backup file. This will replace your current database with the backed-up version.</p>
+
+      <div class="note">
+        <strong>Important</strong>
+        <p>Restoring from a backup replaces all current data. Make sure to create a fresh backup before restoring if you want to preserve your current data.</p>
+      </div>
+    </div>
+
+    <!-- 16. Archive -->
+    <div class="section" id="archive">
+      <div class="section-header">
+        <div class="section-number">Section 16</div>
+        <h2>Archive</h2>
+        <p>Manage old invoices and quotes</p>
+      </div>
+
+      <h3>Archiving</h3>
+      <p>Archive invoices and quotes you no longer need in your active lists. Archived items are moved to the Archive section and won't appear in your main views or dashboard stats.</p>
+
+      <h3>Restoring</h3>
+      <p>Archived items can be restored at any time. Navigate to the <strong>Archive</strong> section, find the item, and click <strong>Restore</strong>.</p>
+
+      <h3>Permanent Deletion</h3>
+      <p>From the Archive, you can permanently delete items. This action cannot be undone.</p>
+
+      <h3>Archive Stats</h3>
+      <p>The Archive section shows the total count and combined amount of all archived invoices.</p>
+    </div>
+
+    <!-- 17. Search -->
+    <div class="section" id="search">
+      <div class="section-header">
+        <div class="section-number">Section 17</div>
+        <h2>Search & Filtering</h2>
+        <p>Find anything in your data quickly</p>
+      </div>
+
+      <h3>Global Search</h3>
+      <p>Press <kbd>Ctrl</kbd>+<kbd>F</kbd> (or <kbd>Cmd</kbd>+<kbd>F</kbd> on Mac) to open the global search. Search across invoices, clients, and saved items simultaneously. Click a result to navigate directly to it.</p>
+
+      <h3>Invoice Filtering</h3>
+      <ul>
+        <li><strong>Status Tabs</strong> &mdash; Filter by All, Draft, Pending, Paid, or Overdue</li>
+        <li><strong>Search Bar</strong> &mdash; Search by invoice number or client name</li>
+        <li><strong>Client Filter</strong> &mdash; Show invoices for a specific client</li>
+      </ul>
+
+      <h3>Pagination</h3>
+      <p>All lists in OwnInvoice support pagination. Navigate between pages using the Previous/Next buttons at the bottom of each list.</p>
+    </div>
+
+    <!-- 18. Keyboard Shortcuts -->
+    <div class="section" id="shortcuts">
+      <div class="section-header">
+        <div class="section-number">Section 18</div>
+        <h2>Keyboard Shortcuts</h2>
+        <p>Quick reference for power users</p>
+      </div>
+
+      <p>Press <kbd>Ctrl</kbd>+<kbd>/</kbd> (or <kbd>Cmd</kbd>+<kbd>/</kbd>) at any time to view the shortcuts help screen.</p>
+
+      <table class="shortcut-table">
+        <tr><th>Shortcut</th><th>Action</th></tr>
+        <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>D</kbd></td><td>Go to Dashboard</td></tr>
+        <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>I</kbd></td><td>Go to Invoices</td></tr>
+        <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>U</kbd></td><td>Go to Clients</td></tr>
+        <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>N</kbd></td><td>Create New Invoice</td></tr>
+        <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>F</kbd></td><td>Open Global Search</td></tr>
+        <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>,</kbd></td><td>Open Settings</td></tr>
+        <tr><td><kbd>Ctrl/Cmd</kbd> + <kbd>/</kbd></td><td>Show Keyboard Shortcuts</td></tr>
+        <tr><td><kbd>Escape</kbd></td><td>Close current modal or dialog</td></tr>
+      </table>
+
+      <div class="tip">
+        <strong>Tip</strong>
+        <p>Keyboard shortcuts are disabled when you're typing in an input field to prevent accidental navigation.</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; padding: 60px 0 40px; border-top: 2px solid var(--border); margin-top: 60px;">
+      <p style="font-size: 16px; font-weight: 700; color: var(--gold); margin-bottom: 4px;">OwnInvoice Desktop</p>
+      <p style="font-size: 13px; color: var(--text-secondary);">Version 1.0.0 &middot; &copy; 2026 Grit Software</p>
+      <p style="font-size: 13px; color: var(--text-secondary);">gritsoftware.dev &middot; support@gritsoftware.dev</p>
+    </div>
+
+  </div>
+
+</body>
+</html>
