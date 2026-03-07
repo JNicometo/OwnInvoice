@@ -10,7 +10,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "electron": "electron .",
-    "electron:dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && cross-env ELECTRON_IS_DEV=true electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:build:win": "npm run build && electron-builder --win",
     "electron:build:mac": "npm run build && electron-builder --mac",
@@ -80,6 +80,7 @@
       "database/**/*",
       "utils/**/*",
       "csv_templates/**/*",
+      "public/**/*",
       "node_modules/**/*",
       "package.json"
     ],
@@ -92,6 +93,7 @@
     "win": {
       "target": "nsis",
       "icon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-Setup.${ext}",
       "publisherName": "Grit Software",
       "fileAssociations": [
         {

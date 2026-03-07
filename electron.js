@@ -1,8 +1,11 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const isDev = !app.isPackaged;
+const isDev = process.env.ELECTRON_IS_DEV === 'true';
 
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('no-sandbox');
+app.commandLine.appendSwitch('disable-gpu-sandbox');
 const db = require('./database/db');
 const nodemailer = require('nodemailer');
 const Stripe = require('stripe');
