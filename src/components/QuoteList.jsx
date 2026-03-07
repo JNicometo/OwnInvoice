@@ -118,7 +118,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
         await deleteQuote(id);
         await loadQuotes();
       } catch (error) {
-        alert('Error deleting quote: ' + error.message);
+        console.error('Error deleting quote: ' + error.message);
       }
     }
   };
@@ -130,7 +130,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
         await archiveQuote(id);
         await loadQuotes();
       } catch (error) {
-        alert('Error archiving quote: ' + error.message);
+        console.error('Error archiving quote: ' + error.message);
       }
     }
   };
@@ -139,11 +139,11 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
     if (window.confirm('Convert this quote to an invoice? This cannot be undone.')) {
       try {
         const result = await convertQuoteToInvoice(quoteId);
-        alert(`Quote converted! Invoice #${result.invoice.invoice_number} created.`);
+        console.log(`Quote converted! Invoice #${result.invoice.invoice_number} created.`);
         await loadQuotes();
       } catch (error) {
         console.error('Error converting quote:', error);
-        alert('Failed to convert quote: ' + error.message);
+        console.error('Failed to convert quote: ' + error.message);
       }
     }
   };
@@ -189,7 +189,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
 
   const handleBulkMarkPaid = async () => {
     if (selectedQuotes.length === 0) return;
-    alert('Bulk operations for quotes are not yet available. Please update quotes individually.');
+    console.error('Bulk operations for quotes are not yet available. Please update quotes individually.');
     // Batch operations not yet implemented
     // if (window.confirm(`Mark ${selectedQuotes.length} quote(s) as paid?`)) {
     //   try {
@@ -197,14 +197,14 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
     //     setSelectedQuotes([]);
     //     await loadQuotes();
     //   } catch (error) {
-    //     alert('Error updating quotes: ' + error.message);
+    //     console.error('Error updating quotes: ' + error.message);
     //   }
     // }
   };
 
   const handleBulkArchive = async () => {
     if (selectedQuotes.length === 0) return;
-    alert('Bulk operations for quotes are not yet available. Please archive quotes individually.');
+    console.error('Bulk operations for quotes are not yet available. Please archive quotes individually.');
     // Batch operations not yet implemented
     // if (window.confirm(`Archive ${selectedQuotes.length} quote(s)?`)) {
     //   try {
@@ -212,14 +212,14 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
     //     setSelectedQuotes([]);
     //     await loadQuotes();
     //   } catch (error) {
-    //     alert('Error archiving quotes: ' + error.message);
+    //     console.error('Error archiving quotes: ' + error.message);
     //   }
     // }
   };
 
   const handleBulkDelete = async () => {
     if (selectedQuotes.length === 0) return;
-    alert('Bulk operations for quotes are not yet available. Please delete quotes individually.');
+    console.error('Bulk operations for quotes are not yet available. Please delete quotes individually.');
     // Batch operations not yet implemented
     // if (window.confirm(`Delete ${selectedQuotes.length} quote(s) permanently? This cannot be undone.`)) {
     //   try {
@@ -227,7 +227,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
     //     setSelectedQuotes([]);
     //     await loadQuotes();
     //   } catch (error) {
-    //     alert('Error deleting quotes: ' + error.message);
+    //     console.error('Error deleting quotes: ' + error.message);
     //   }
     // }
   };

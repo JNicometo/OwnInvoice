@@ -73,6 +73,7 @@ function QuoteForm({ quote, onClose }) {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
 
   const [formData, setFormData] = useState({
     quote_number: '',
@@ -144,7 +145,7 @@ function QuoteForm({ quote, onClose }) {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      alert('Error loading data: ' + error.message);
+      console.error('Error loading data: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -289,7 +290,7 @@ function QuoteForm({ quote, onClose }) {
 
   const handleSearchCustomerNumber = async () => {
     if (!customerNumberSearch.trim()) {
-      alert('Please enter a customer number');
+      setFormError('Please enter a customer number');
       return;
     }
 
@@ -315,14 +316,14 @@ function QuoteForm({ quote, onClose }) {
       }
     } catch (error) {
       console.error('Error searching for customer:', error);
-      alert('Error searching for customer: ' + error.message);
+      console.error('Error searching for customer: ' + error.message);
     }
   };
 
   const handleCreateCustomer = async () => {
     // Validate required fields
     if (!newCustomerData.name || !newCustomerData.email) {
-      alert('Please fill in Name and Email (required fields)');
+      setFormError('Please fill in Name and Email (required fields)');
       return;
     }
 
@@ -342,10 +343,10 @@ function QuoteForm({ quote, onClose }) {
       setShowCreateCustomerModal(false);
       setPendingCustomerNumber('');
 
-      alert('Customer created successfully!');
+      console.log('Customer created successfully!');
     } catch (error) {
       console.error('Error creating customer:', error);
-      alert('Error creating customer: ' + error.message);
+      console.error('Error creating customer: ' + error.message);
     }
   };
 
@@ -384,7 +385,7 @@ function QuoteForm({ quote, onClose }) {
   const handleCreateItem = async () => {
     // Validate required fields
     if (!newItemData.description || !newItemData.rate) {
-      alert('Please fill in Description and Rate (required fields)');
+      setFormError('Please fill in Description and Rate (required fields)');
       return;
     }
 
@@ -399,10 +400,10 @@ function QuoteForm({ quote, onClose }) {
       setShowCreateItemModal(false);
       setPendingItemNumber('');
 
-      alert('Item saved successfully! You can now use it in future quotes.');
+      console.log('Item saved successfully! You can now use it in future quotes.');
     } catch (error) {
       console.error('Error creating item:', error);
-      alert('Error creating item: ' + error.message);
+      console.error('Error creating item: ' + error.message);
     }
   };
 
@@ -440,7 +441,7 @@ function QuoteForm({ quote, onClose }) {
       if (validation.errors.items) errorMessages.push(`• ${validation.errors.items}`);
       if (validation.errors.itemErrors) errorMessages.push(`• Some line items have validation errors`);
 
-      alert('Please fix the following errors:\n\n' + errorMessages.join('\n'));
+      console.error('Please fix the following errors:\n\n' + errorMessages.join('\n'));
       return;
     }
 
@@ -487,7 +488,7 @@ function QuoteForm({ quote, onClose }) {
     } catch (error) {
       console.error('Error saving quote:', error);
       const errorMessage = error.message || error.toString() || 'Unknown error occurred';
-      alert('Error saving quote: ' + errorMessage);
+      console.error('Error saving quote: ' + errorMessage);
     }
   };
 
@@ -506,6 +507,12 @@ function QuoteForm({ quote, onClose }) {
   return (
     <div className="p-8">
       <div className="max-w-5xl mx-auto">
+        {formError && (
+          <div style={{ background: '#fee', color: '#c00', padding: '10px 16px', borderRadius: 6, marginBottom: 16 }}>
+            {formError}
+            <button onClick={() => setFormError('')} style={{ float: 'right', background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">
             {isEdit ? 'Edit Quote' : 'New Quote'}

@@ -55,7 +55,7 @@ function Archive() {
         await restoreInvoice(id);
         await loadArchivedInvoices();
       } catch (error) {
-        alert('Error restoring invoice: ' + error.message);
+        console.error('Error restoring invoice: ' + error.message);
       }
     }
   };
@@ -68,7 +68,7 @@ function Archive() {
         await deleteInvoice(id);
         await loadArchivedInvoices();
       } catch (error) {
-        alert('Error deleting invoice: ' + error.message);
+        console.error('Error deleting invoice: ' + error.message);
       }
     }
   };

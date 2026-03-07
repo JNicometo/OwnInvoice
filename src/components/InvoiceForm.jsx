@@ -30,6 +30,7 @@ function InvoiceForm({ invoice, onClose }) {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
 
   const [formData, setFormData] = useState({
     invoice_number: '',
@@ -249,7 +250,7 @@ function InvoiceForm({ invoice, onClose }) {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      alert('Error loading data: ' + error.message);
+      console.error('Error loading data: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -355,7 +356,7 @@ function InvoiceForm({ invoice, onClose }) {
 
   const handleSearchCustomerNumber = async () => {
     if (!customerNumberSearch.trim()) {
-      alert('Please enter a customer number');
+      setFormError('Please enter a customer number');
       return;
     }
 
@@ -381,13 +382,13 @@ function InvoiceForm({ invoice, onClose }) {
       }
     } catch (error) {
       console.error('Error searching for customer:', error);
-      alert('Error searching for customer: ' + error.message);
+      console.error('Error searching for customer: ' + error.message);
     }
   };
 
   const handleCreateCustomer = async () => {
     if (!newCustomerData.name || !newCustomerData.email) {
-      alert('Name and email are required');
+      setFormError('Name and email are required');
       return;
     }
 
@@ -405,7 +406,7 @@ function InvoiceForm({ invoice, onClose }) {
         setPendingCustomerNumber('');
         setNewCustomerData({ customer_number: '', name: '', email: '', phone: '', address: '', city: '', state: '', zip: '' });
 
-        alert('Customer updated successfully!');
+        console.log('Customer updated successfully!');
       } else {
         const result = await createClient(newCustomerData);
         const newClientId = result.lastInsertRowid || result.id;
@@ -439,11 +440,11 @@ function InvoiceForm({ invoice, onClose }) {
         setPendingCustomerNumber('');
         setNewCustomerData({ customer_number: '', name: '', email: '', phone: '', address: '', city: '', state: '', zip: '' });
 
-        alert('Customer created and selected!');
+        console.log('Customer created and selected!');
       }
     } catch (error) {
       console.error('Error creating customer:', error);
-      alert('Failed to create customer: ' + error.message);
+      console.error('Failed to create customer: ' + error.message);
     }
   };
 
@@ -465,13 +466,13 @@ function InvoiceForm({ invoice, onClose }) {
       setShowCreateCustomerModal(true);
     } catch (error) {
       console.error('Error loading client for edit:', error);
-      alert('Error loading client: ' + error.message);
+      console.error('Error loading client: ' + error.message);
     }
   };
 
   const handleAddShippingAddress = async () => {
     if (!newAddressData.label || !newAddressData.address) {
-      alert('Please fill in Label and Address (required fields)');
+      setFormError('Please fill in Label and Address (required fields)');
       return;
     }
 
@@ -486,10 +487,10 @@ function InvoiceForm({ invoice, onClose }) {
       setNewAddressData({ label: '', address: '', city: '', state: '', zip: '', country: '', is_default: false });
       setShowAddAddressModal(false);
 
-      alert('Shipping address added successfully!');
+      console.log('Shipping address added successfully!');
     } catch (error) {
       console.error('Error adding address:', error);
-      alert('Error adding address: ' + error.message);
+      console.error('Error adding address: ' + error.message);
     }
   };
 
@@ -529,7 +530,7 @@ function InvoiceForm({ invoice, onClose }) {
   const handleCreateItem = async () => {
     // Validate required fields
     if (!newItemData.description || !newItemData.rate) {
-      alert('Please fill in Description and Rate (required fields)');
+      setFormError('Please fill in Description and Rate (required fields)');
       return;
     }
 
@@ -545,10 +546,10 @@ function InvoiceForm({ invoice, onClose }) {
       setPendingItemNumber('');
       setPendingItemIndex(null);
 
-      alert('Item saved successfully! You can now use it in future invoices.');
+      console.log('Item saved successfully! You can now use it in future invoices.');
     } catch (error) {
       console.error('Error creating item:', error);
-      alert('Error creating item: ' + error.message);
+      console.error('Error creating item: ' + error.message);
     }
   };
 
@@ -576,7 +577,7 @@ function InvoiceForm({ invoice, onClose }) {
     const validation = validateInvoice(formData, items);
     if (!validation.isValid) {
       setErrors(validation.errors);
-      alert('Please fix the errors in the form');
+      console.error('Please fix the errors in the form');
       return;
     }
 
@@ -630,7 +631,7 @@ function InvoiceForm({ invoice, onClose }) {
     } catch (error) {
       console.error('Error saving invoice:', error);
       const errorMessage = error.message || error.toString() || 'Unknown error occurred';
-      alert('Error saving invoice: ' + errorMessage);
+      console.error('Error saving invoice: ' + errorMessage);
     }
   };
 
@@ -657,6 +658,12 @@ function InvoiceForm({ invoice, onClose }) {
   return (
     <div className="p-8">
       <div className="max-w-5xl mx-auto">
+        {formError && (
+          <div style={{ background: '#fee', color: '#c00', padding: '10px 16px', borderRadius: 6, marginBottom: 16 }}>
+            {formError}
+            <button onClick={() => setFormError('')} style={{ float: 'right', background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">
             {isEdit ? 'Edit Invoice' : 'New Invoice'}

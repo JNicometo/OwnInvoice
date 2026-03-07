@@ -160,7 +160,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
         }
         await loadInvoices();
       } catch (error) {
-        alert(`Error deleting ${label}: ` + error.message);
+        console.error(`Error deleting ${label}: ` + error.message);
       }
     }
   };
@@ -176,7 +176,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
         }
         await loadInvoices();
       } catch (error) {
-        alert(`Error archiving ${label}: ` + error.message);
+        console.error(`Error archiving ${label}: ` + error.message);
       }
     }
   };
@@ -195,11 +195,11 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
     if (window.confirm('Convert this quote to an invoice? This cannot be undone.')) {
       try {
         const result = await convertQuoteToInvoice(quoteId);
-        alert(`Quote converted to Invoice #${result.invoice.invoice_number}!`);
+        console.log(`Quote converted to Invoice #${result.invoice.invoice_number}!`);
         await loadInvoices();
       } catch (error) {
         console.error('Error converting quote:', error);
-        alert('Failed to convert quote: ' + error.message);
+        console.error('Failed to convert quote: ' + error.message);
       }
     }
   };
@@ -240,7 +240,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
         setSelectedInvoices([]);
         await loadInvoices();
       } catch (error) {
-        alert('Error updating invoices: ' + error.message);
+        console.error('Error updating invoices: ' + error.message);
       }
     }
   };
@@ -254,7 +254,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
         setSelectedInvoices([]);
         await loadInvoices();
       } catch (error) {
-        alert('Error archiving invoices: ' + error.message);
+        console.error('Error archiving invoices: ' + error.message);
       }
     }
   };
@@ -268,7 +268,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
         setSelectedInvoices([]);
         await loadInvoices();
       } catch (error) {
-        alert('Error deleting invoices: ' + error.message);
+        console.error('Error deleting invoices: ' + error.message);
       }
     }
   };

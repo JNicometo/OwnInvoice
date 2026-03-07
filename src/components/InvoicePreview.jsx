@@ -62,7 +62,7 @@ function InvoicePreview({ invoice, onClose }) {
       await loadPayments(invoice.id);
     } catch (error) {
       console.error('Error loading invoice:', error);
-      alert('Error loading invoice: ' + error.message);
+      console.error('Error loading invoice: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -540,14 +540,14 @@ function InvoicePreview({ invoice, onClose }) {
       const result = await saveInvoiceAsPDF(invoiceHtml, fullInvoice.invoice_number);
 
       if (result.success) {
-        alert(`Invoice PDF saved successfully at: ${result.filePath}`);
+        console.log(`Invoice PDF saved successfully at: ${result.filePath}`);
       } else if (result.canceled) {
         // User canceled the save dialog
         console.log('PDF save canceled by user');
       }
     } catch (error) {
       console.error('Error saving PDF:', error);
-      alert('Error saving PDF: ' + error.message);
+      console.error('Error saving PDF: ' + error.message);
     }
   };
 
@@ -579,17 +579,17 @@ function InvoicePreview({ invoice, onClose }) {
   const handleSendEmail = async () => {
     // Validate
     if (!emailData.recipient || !emailData.recipient.trim()) {
-      alert('Please enter a recipient email address');
+      console.error('Please enter a recipient email address');
       return;
     }
 
     if (!settings?.smtp_host || !settings?.smtp_user || !settings?.smtp_password) {
-      alert('Email settings are not configured. Please configure SMTP settings in Settings > Email Templates.');
+      console.error('Email settings are not configured. Please configure SMTP settings in Settings > Email Templates.');
       return;
     }
 
     if (!fullInvoice || !fullInvoice.items || fullInvoice.items.length === 0) {
-      alert('Invoice data is not fully loaded. Please wait a moment and try again.');
+      console.error('Invoice data is not fully loaded. Please wait a moment and try again.');
       return;
     }
 
@@ -609,12 +609,12 @@ function InvoicePreview({ invoice, onClose }) {
       });
 
       if (result.success) {
-        alert(result.message || 'Invoice email sent successfully!');
+        console.error(result.message || 'Invoice email sent successfully!');
         setShowEmailModal(false);
       }
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('Error sending email: ' + error.message);
+      console.error('Error sending email: ' + error.message);
     } finally {
       setSending(false);
     }
@@ -631,11 +631,11 @@ function InvoicePreview({ invoice, onClose }) {
 
       if (result.success) {
         setStripePaymentLink(result.paymentLink);
-        alert('Stripe payment link generated! You can now copy and send it to your client.');
+        console.log('Stripe payment link generated! You can now copy and send it to your client.');
       }
     } catch (error) {
       console.error('Error generating Stripe link:', error);
-      alert(error.message || 'Error generating Stripe payment link');
+      console.error(error.message || 'Error generating Stripe payment link');
     } finally {
       setGeneratingPaymentLink(false);
     }
@@ -651,11 +651,11 @@ function InvoicePreview({ invoice, onClose }) {
 
       if (result.success) {
         setPaypalPaymentLink(result.paymentLink);
-        alert('PayPal payment link generated! You can now copy and send it to your client.');
+        console.log('PayPal payment link generated! You can now copy and send it to your client.');
       }
     } catch (error) {
       console.error('Error generating PayPal link:', error);
-      alert(error.message || 'Error generating PayPal payment link');
+      console.error(error.message || 'Error generating PayPal payment link');
     } finally {
       setGeneratingPaymentLink(false);
     }
@@ -672,11 +672,11 @@ function InvoicePreview({ invoice, onClose }) {
 
       if (result.success) {
         setSquarePaymentLink(result.paymentLink);
-        alert('Square payment link generated! You can now copy and send it to your client.');
+        console.log('Square payment link generated! You can now copy and send it to your client.');
       }
     } catch (error) {
       console.error('Error generating Square link:', error);
-      alert(error.message || 'Error generating Square payment link');
+      console.error(error.message || 'Error generating Square payment link');
     } finally {
       setGeneratingPaymentLink(false);
     }
@@ -693,11 +693,11 @@ function InvoicePreview({ invoice, onClose }) {
 
       if (result.success) {
         setGoCardlessPaymentLink(result.paymentLink);
-        alert('GoCardless payment link generated! You can now copy and send it to your client.');
+        console.log('GoCardless payment link generated! You can now copy and send it to your client.');
       }
     } catch (error) {
       console.error('Error generating GoCardless link:', error);
-      alert(error.message || 'Error generating GoCardless payment link');
+      console.error(error.message || 'Error generating GoCardless payment link');
     } finally {
       setGeneratingPaymentLink(false);
     }
@@ -719,11 +719,11 @@ function InvoicePreview({ invoice, onClose }) {
 
       if (result.success) {
         setAuthorizeNetPaymentLink(result.paymentLink);
-        alert('Authorize.Net payment link generated! You can now copy and send it to your client.');
+        console.log('Authorize.Net payment link generated! You can now copy and send it to your client.');
       }
     } catch (error) {
       console.error('Error generating Authorize.Net link:', error);
-      alert(error.message || 'Error generating Authorize.Net payment link');
+      console.error(error.message || 'Error generating Authorize.Net payment link');
     } finally {
       setGeneratingPaymentLink(false);
     }
@@ -731,7 +731,7 @@ function InvoicePreview({ invoice, onClose }) {
 
   const handleCopyLink = (link, gateway) => {
     navigator.clipboard.writeText(link);
-    alert(`${gateway} payment link copied to clipboard!`);
+    console.log(`${gateway} payment link copied to clipboard!`);
   };
 
   const handleOpenPaymentModal = () => {
@@ -750,7 +750,7 @@ function InvoicePreview({ invoice, onClose }) {
   const handleRecordPayment = async () => {
     // Validate
     if (!paymentData.amount || parseFloat(paymentData.amount) <= 0) {
-      alert('Please enter a valid payment amount');
+      console.error('Please enter a valid payment amount');
       return;
     }
 
@@ -771,11 +771,11 @@ function InvoicePreview({ invoice, onClose }) {
         loadInvoiceData()
       ]);
 
-      alert('Payment recorded successfully!');
+      console.log('Payment recorded successfully!');
       setShowPaymentModal(false);
     } catch (error) {
       console.error('Error recording payment:', error);
-      alert('Error recording payment: ' + error.message);
+      console.error('Error recording payment: ' + error.message);
     } finally {
       setSavingPayment(false);
     }
@@ -795,24 +795,24 @@ function InvoicePreview({ invoice, onClose }) {
         loadInvoiceData()
       ]);
 
-      alert('Payment deleted successfully');
+      console.log('Payment deleted successfully');
     } catch (error) {
       console.error('Error deleting payment:', error);
-      alert('Error deleting payment: ' + error.message);
+      console.error('Error deleting payment: ' + error.message);
     }
   };
 
   const handleProcessCardPayment = async () => {
     // Validate card details
     if (!cardDetails.number || !cardDetails.name || !cardDetails.expMonth || !cardDetails.expYear || !cardDetails.cvc) {
-      alert('Please fill in all card details');
+      console.error('Please fill in all card details');
       return;
     }
 
     // Basic card number validation
     const cardNumber = cardDetails.number.replace(/\s/g, '');
     if (cardNumber.length < 13 || cardNumber.length > 19) {
-      alert('Please enter a valid card number');
+      console.error('Please enter a valid card number');
       return;
     }
 
@@ -823,13 +823,13 @@ function InvoicePreview({ invoice, onClose }) {
     const expMonth = parseInt(cardDetails.expMonth);
 
     if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
-      alert('Card has expired');
+      console.error('Card has expired');
       return;
     }
 
     // Validate CVC
     if (cardDetails.cvc.length < 3 || cardDetails.cvc.length > 4) {
-      alert('Please enter a valid CVC');
+      console.error('Please enter a valid CVC');
       return;
     }
 
@@ -875,7 +875,7 @@ function InvoicePreview({ invoice, onClose }) {
           loadInvoiceData()
         ]);
 
-        alert('Payment successful! Thank you for your payment.');
+        console.error('Payment successful! Thank you for your payment.');
         setShowCardPaymentModal(false);
 
         // Reset card details
@@ -887,12 +887,12 @@ function InvoicePreview({ invoice, onClose }) {
           cvc: '',
         });
       } else {
-        alert(paymentResult.message || 'Payment failed. Please try again.');
+        console.error(paymentResult.message || 'Payment failed. Please try again.');
       }
 
     } catch (error) {
       console.error('Error processing card payment:', error);
-      alert('Payment failed: ' + error.message);
+      console.error('Payment failed: ' + error.message);
     } finally {
       setProcessingCardPayment(false);
     }

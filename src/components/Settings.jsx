@@ -361,14 +361,14 @@ function Settings() {
     // Validate file type
     const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      alert('Please upload a valid image file (PNG, JPG, SVG, or WebP)');
+      console.error('Please upload a valid image file (PNG, JPG, SVG, or WebP)');
       return;
     }
 
     // Validate file size (max 2MB)
     const maxSize = 2 * 1024 * 1024; // 2MB
     if (file.size > maxSize) {
-      alert('Image size must be less than 2MB. Please choose a smaller file.');
+      console.error('Image size must be less than 2MB. Please choose a smaller file.');
       return;
     }
 
@@ -381,7 +381,7 @@ function Settings() {
       setSuccessMessage('');
     };
     reader.onerror = () => {
-      alert('Error reading file. Please try again.');
+      console.error('Error reading file. Please try again.');
     };
     reader.readAsDataURL(file);
   };
@@ -434,7 +434,7 @@ function Settings() {
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Error saving settings: ' + error.message);
+      console.error('Error saving settings: ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -2878,11 +2878,11 @@ function Settings() {
                             const result = await window.electron.ipcRenderer.invoke('backup:create', fileResult.path);
 
                             if (result.success) {
-                              alert(`Backup created successfully!\n\nSaved to: ${result.path}`);
+                              console.log(`Backup created successfully!\n\nSaved to: ${result.path}`);
                             }
                           } catch (error) {
                             console.error('Error creating backup:', error);
-                            alert('Error creating backup: ' + error.message);
+                            console.error('Error creating backup: ' + error.message);
                           } finally {
                             setSaving(false);
                           }
@@ -2958,7 +2958,7 @@ function Settings() {
                             const result = await window.electron.ipcRenderer.invoke('backup:restore', fileResult.path);
 
                             if (result.success) {
-                              alert(
+                              console.error(
                                 `Backup restored successfully!\n\n` +
                                 `Tables restored: ${result.stats.tables_restored}\n` +
                                 `Total rows: ${result.stats.total_rows}\n\n` +
@@ -2970,7 +2970,7 @@ function Settings() {
                             }
                           } catch (error) {
                             console.error('Error restoring backup:', error);
-                            alert('Error restoring backup: ' + error.message);
+                            console.error('Error restoring backup: ' + error.message);
                           } finally {
                             setSaving(false);
                           }
@@ -3060,14 +3060,14 @@ function Settings() {
                               }
 
                               message += '\nThe app will reload to apply the changes.';
-                              alert(message);
+                              console.error(message);
 
                               // Reload the app to reflect changes
                               window.location.reload();
                             }
                           } catch (error) {
                             console.error('Error importing CSV files:', error);
-                            alert('Error importing CSV files: ' + error.message);
+                            console.error('Error importing CSV files: ' + error.message);
                           } finally {
                             setSaving(false);
                           }
@@ -3477,12 +3477,12 @@ function Settings() {
                               });
 
                               if (result.success) {
-                                alert('✓ Connection successful!\n\nThe server is reachable and credentials are valid.');
+                                console.error('✓ Connection successful!\n\nThe server is reachable and credentials are valid.');
                               } else {
-                                alert('✗ Connection failed:\n\n' + result.message);
+                                console.error('✗ Connection failed:\n\n' + result.message);
                               }
                             } catch (error) {
-                              alert('✗ Connection failed:\n\n' + error.message);
+                              console.error('✗ Connection failed:\n\n' + error.message);
                             } finally {
                               setSaving(false);
                             }
@@ -3538,7 +3538,7 @@ function Settings() {
                                 });
 
                                 if (!createResult.success) {
-                                  alert('✗ Error creating database:\n\n' + createResult.message);
+                                  console.error('✗ Error creating database:\n\n' + createResult.message);
                                   setSaving(false);
                                   return;
                                 }
@@ -3556,12 +3556,12 @@ function Settings() {
                               });
 
                               if (schemaResult.success) {
-                                alert('✓ Setup complete!\n\nDatabase and all tables have been created/updated.\n\nYou can now enable "Use SQL Server Database" and save settings.');
+                                console.error('✓ Setup complete!\n\nDatabase and all tables have been created/updated.\n\nYou can now enable "Use SQL Server Database" and save settings.');
                               } else {
-                                alert('✗ Error creating tables:\n\n' + schemaResult.message);
+                                console.error('✗ Error creating tables:\n\n' + schemaResult.message);
                               }
                             } catch (error) {
-                              alert('✗ Error:\n\n' + error.message);
+                              console.error('✗ Error:\n\n' + error.message);
                             } finally {
                               setSaving(false);
                             }

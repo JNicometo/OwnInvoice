@@ -142,7 +142,7 @@ function ClientManagement({ onNavigateToInvoices }) {
 
     } catch (error) {
       console.error('Error loading clients:', error);
-      alert('Error: ' + error.message);
+      console.error('Error: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -304,7 +304,7 @@ function ClientManagement({ onNavigateToInvoices }) {
       handleCloseModal();
     } catch (error) {
       console.error('Error saving client:', error);
-      alert('Error saving client: ' + error.message);
+      console.error('Error saving client: ' + error.message);
     }
   };
 
@@ -323,7 +323,7 @@ function ClientManagement({ onNavigateToInvoices }) {
       await deleteClient(id);
       await loadClients();
     } catch (error) {
-      alert('Error deleting client: ' + error.message);
+      console.error('Error deleting client: ' + error.message);
     }
   };
 
@@ -347,7 +347,7 @@ function ClientManagement({ onNavigateToInvoices }) {
 
   const handleSaveAddress = async () => {
     if (!addressFormData.label.trim()) {
-      alert('Please enter a label for the address');
+      console.error('Please enter a label for the address');
       return;
     }
     if (!editingClient) return;
@@ -364,7 +364,7 @@ function ClientManagement({ onNavigateToInvoices }) {
       setEditingAddressId(null);
     } catch (err) {
       console.error('Error saving address:', err);
-      alert('Error saving address: ' + err.message);
+      console.error('Error saving address: ' + err.message);
     }
   };
 
@@ -388,7 +388,7 @@ function ClientManagement({ onNavigateToInvoices }) {
       await loadClientAddresses(editingClient.id);
     } catch (err) {
       console.error('Error deleting address:', err);
-      alert('Error deleting address: ' + err.message);
+      console.error('Error deleting address: ' + err.message);
     }
   };
 
@@ -403,7 +403,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     if (!file) return;
 
     if (!file.name.endsWith('.csv')) {
-      alert('Please upload a CSV file');
+      console.error('Please upload a CSV file');
       return;
     }
 
@@ -419,7 +419,7 @@ function ClientManagement({ onNavigateToInvoices }) {
         validateCSVData(results.data);
       },
       error: (error) => {
-        alert('Error parsing CSV: ' + error.message);
+        console.error('Error parsing CSV: ' + error.message);
       }
     });
   };
@@ -431,7 +431,7 @@ function ClientManagement({ onNavigateToInvoices }) {
 
     // Check if headers exist
     if (data.length === 0) {
-      alert('CSV file is empty');
+      console.error('CSV file is empty');
       return;
     }
 
@@ -439,7 +439,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     const missingFields = requiredFields.filter(field => !headers.includes(field));
 
     if (missingFields.length > 0) {
-      alert(`CSV file must have these columns: ${missingFields.join(', ')}`);
+      console.error(`CSV file must have these columns: ${missingFields.join(', ')}`);
       return;
     }
 
@@ -473,7 +473,7 @@ function ClientManagement({ onNavigateToInvoices }) {
 
   const handleImportCSV = async () => {
     if (csvData.length === 0) {
-      alert('No valid records to import');
+      console.error('No valid records to import');
       return;
     }
 
@@ -521,10 +521,10 @@ function ClientManagement({ onNavigateToInvoices }) {
         message += `\n\nDuplicate customer numbers: ${duplicates.join(', ')}`;
       }
 
-      alert(message);
+      console.error(message);
       handleCloseImportModal();
     } catch (error) {
-      alert('Error importing CSV: ' + error.message);
+      console.error('Error importing CSV: ' + error.message);
     } finally {
       setImporting(false);
     }

@@ -14,6 +14,7 @@ function RecurringInvoices() {
   const [clients, setClients] = useState([]);
   const [savedItems, setSavedItems] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [formError, setFormError] = useState('');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -87,7 +88,7 @@ function RecurringInvoices() {
         await deleteRecurringInvoice(id);
         await loadData();
       } catch (error) {
-        alert('Error deleting recurring invoice: ' + error.message);
+        console.error('Error deleting recurring invoice: ' + error.message);
       }
     }
   };
@@ -108,7 +109,7 @@ function RecurringInvoices() {
       await loadData();
     } catch (error) {
       console.error('Error toggling active status:', error);
-      alert('Error: ' + error.message);
+      console.error('Error: ' + error.message);
     }
   };
 
@@ -117,11 +118,11 @@ function RecurringInvoices() {
       try {
         const result = await generateInvoiceFromRecurring(id);
         if (result) {
-          alert(`Invoice ${result.invoice_number || ''} generated successfully!`);
+          console.error(`Invoice ${result.invoice_number || ''} generated successfully!`);
           await loadData();
         }
       } catch (error) {
-        alert('Error generating invoice: ' + error.message);
+        console.error('Error generating invoice: ' + error.message);
       }
     }
   };
@@ -142,7 +143,7 @@ function RecurringInvoices() {
       setItems(fullInvoice.items || [{ description: '', quantity: 1, rate: 0, amount: 0 }]);
       setShowForm(true);
     } catch (error) {
-      alert('Error loading recurring invoice: ' + error.message);
+      console.error('Error loading recurring invoice: ' + error.message);
     }
   };
 
@@ -215,13 +216,13 @@ function RecurringInvoices() {
     e.preventDefault();
 
     if (!formData.client_id || !formData.template_name) {
-      alert('Please fill in all required fields');
+      setFormError('Please fill in all required fields');
       return;
     }
 
     const validItems = items.filter(item => item.description.trim());
     if (validItems.length === 0) {
-      alert('Please add at least one item');
+      setFormError('Please add at least one item');
       return;
     }
 
@@ -251,7 +252,7 @@ function RecurringInvoices() {
       await loadData();
     } catch (error) {
       console.error('Error saving recurring invoice:', error);
-      alert('Error saving recurring invoice: ' + error.message);
+      console.error('Error saving recurring invoice: ' + error.message);
     }
   };
 
@@ -526,6 +527,12 @@ function RecurringInvoices() {
 
   return (
     <div className="p-8">
+      {formError && (
+        <div style={{ background: '#fee', color: '#c00', padding: '10px 16px', borderRadius: 6, marginBottom: 16 }}>
+          {formError}
+          <button onClick={() => setFormError('')} style={{ float: 'right', background: 'none', border: 'none', color: '#c00', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+        </div>
+      )}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-6">
           <div>

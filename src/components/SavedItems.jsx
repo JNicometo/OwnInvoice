@@ -196,7 +196,7 @@ function SavedItems() {
       handleCloseForm();
     } catch (error) {
       console.error('Error saving item:', error);
-      alert('Error saving item: ' + error.message);
+      console.error('Error saving item: ' + error.message);
     }
   };
 
@@ -206,7 +206,7 @@ function SavedItems() {
         await deleteSavedItem(id);
         await loadSavedItems();
       } catch (error) {
-        alert('Error deleting item: ' + error.message);
+        console.error('Error deleting item: ' + error.message);
       }
     }
   };
@@ -217,7 +217,7 @@ function SavedItems() {
     if (!file) return;
 
     if (!file.name.endsWith('.csv')) {
-      alert('Please upload a CSV file');
+      console.error('Please upload a CSV file');
       return;
     }
 
@@ -233,7 +233,7 @@ function SavedItems() {
         validateCSVData(results.data);
       },
       error: (error) => {
-        alert('Error parsing CSV: ' + error.message);
+        console.error('Error parsing CSV: ' + error.message);
       }
     });
   };
@@ -244,7 +244,7 @@ function SavedItems() {
     const validData = [];
 
     if (data.length === 0) {
-      alert('CSV file is empty');
+      console.error('CSV file is empty');
       return;
     }
 
@@ -252,7 +252,7 @@ function SavedItems() {
     const missingFields = requiredFields.filter(field => !headers.includes(field));
 
     if (missingFields.length > 0) {
-      alert(`CSV file must have these columns: ${missingFields.join(', ')}`);
+      console.error(`CSV file must have these columns: ${missingFields.join(', ')}`);
       return;
     }
 
@@ -282,7 +282,7 @@ function SavedItems() {
 
   const handleImportCSV = async () => {
     if (csvData.length === 0) {
-      alert('No valid records to import');
+      console.error('No valid records to import');
       return;
     }
 
@@ -324,10 +324,10 @@ function SavedItems() {
         message += `\n\nDuplicate item numbers: ${duplicates.join(', ')}`;
       }
 
-      alert(message);
+      console.error(message);
       handleCloseImportModal();
     } catch (error) {
-      alert('Error importing CSV: ' + error.message);
+      console.error('Error importing CSV: ' + error.message);
     } finally {
       setImporting(false);
     }

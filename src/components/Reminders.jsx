@@ -59,7 +59,7 @@ function Reminders() {
       setSettings(settingsData);
     } catch (error) {
       console.error('Error loading reminders data:', error);
-      alert('Error loading data: ' + error.message);
+      console.error('Error loading data: ' + error.message);
     }
   };
 
@@ -98,7 +98,7 @@ function Reminders() {
       setShowTemplateForm(false);
       await loadData();
     } catch (error) {
-      alert('Error saving template: ' + error.message);
+      console.error('Error saving template: ' + error.message);
     }
   };
 
@@ -108,7 +108,7 @@ function Reminders() {
         await deleteReminderTemplate(id);
         await loadData();
       } catch (error) {
-        alert('Error deleting template: ' + error.message);
+        console.error('Error deleting template: ' + error.message);
       }
     }
   };
@@ -158,11 +158,11 @@ function Reminders() {
         notes: `Manually sent using template: ${selectedTemplate.name}`
       });
 
-      alert('Reminder email sent successfully!');
+      console.log('Reminder email sent successfully!');
       setShowSendModal(false);
       await loadData();
     } catch (error) {
-      alert('Error sending reminder: ' + error.message);
+      console.error('Error sending reminder: ' + error.message);
     } finally {
       setSending(false);
     }
@@ -174,7 +174,7 @@ function Reminders() {
         await deleteInvoiceReminder(id);
         await loadData();
       } catch (error) {
-        alert('Error deleting reminder: ' + error.message);
+        console.error('Error deleting reminder: ' + error.message);
       }
     }
   };

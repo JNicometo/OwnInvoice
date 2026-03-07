@@ -32,7 +32,7 @@ function QuotePreview({ quote, onClose }) {
       setSettings(settingsData);
     } catch (error) {
       console.error('Error loading quote:', error);
-      alert('Error loading quote: ' + error.message);
+      console.error('Error loading quote: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -476,14 +476,14 @@ function QuotePreview({ quote, onClose }) {
       const result = await saveInvoiceAsPDF(quoteHtml, fullQuote.quote_number);
 
       if (result.success) {
-        alert(`Quote PDF saved successfully at: ${result.filePath}`);
+        console.log(`Quote PDF saved successfully at: ${result.filePath}`);
       } else if (result.canceled) {
         // User canceled the save dialog
         console.log('PDF save canceled by user');
       }
     } catch (error) {
       console.error('Error saving PDF:', error);
-      alert('Error saving PDF: ' + error.message);
+      console.error('Error saving PDF: ' + error.message);
     }
   };
 
@@ -515,17 +515,17 @@ function QuotePreview({ quote, onClose }) {
   const handleSendEmail = async () => {
     // Validate
     if (!emailData.recipient || !emailData.recipient.trim()) {
-      alert('Please enter a recipient email address');
+      console.error('Please enter a recipient email address');
       return;
     }
 
     if (!settings?.smtp_host || !settings?.smtp_user || !settings?.smtp_password) {
-      alert('Email settings are not configured. Please configure SMTP settings in Settings > Email Templates.');
+      console.error('Email settings are not configured. Please configure SMTP settings in Settings > Email Templates.');
       return;
     }
 
     if (!fullQuote || !fullQuote.items || fullQuote.items.length === 0) {
-      alert('Quote data is not fully loaded. Please wait a moment and try again.');
+      console.error('Quote data is not fully loaded. Please wait a moment and try again.');
       return;
     }
 
@@ -545,12 +545,12 @@ function QuotePreview({ quote, onClose }) {
       });
 
       if (result.success) {
-        alert(result.message || 'Quote email sent successfully!');
+        console.error(result.message || 'Quote email sent successfully!');
         setShowEmailModal(false);
       }
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('Error sending email: ' + error.message);
+      console.error('Error sending email: ' + error.message);
     } finally {
       setSending(false);
     }

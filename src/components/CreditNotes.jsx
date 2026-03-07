@@ -57,7 +57,7 @@ function CreditNotes() {
       setSettings(settingsData);
     } catch (error) {
       console.error('Error loading data:', error);
-      alert('Error loading data: ' + error.message);
+      console.error('Error loading data: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -145,7 +145,7 @@ function CreditNotes() {
       setShowInvoiceSearchResults(false);
     } catch (error) {
       console.error('Error loading invoice:', error);
-      alert('Error loading invoice: ' + error.message);
+      console.error('Error loading invoice: ' + error.message);
     }
   };
 
@@ -219,7 +219,7 @@ function CreditNotes() {
       if (validation.errors.items) errorMessages.push(`• ${validation.errors.items}`);
       if (validation.errors.itemErrors) errorMessages.push(`• Some line items have validation errors`);
 
-      alert('Please fix the following errors:\n\n' + errorMessages.join('\n'));
+      console.error('Please fix the following errors:\n\n' + errorMessages.join('\n'));
       return;
     }
 
@@ -242,7 +242,7 @@ function CreditNotes() {
       handleCloseForm();
     } catch (error) {
       console.error('Error saving credit note:', error);
-      alert('Error saving credit note: ' + error.message);
+      console.error('Error saving credit note: ' + error.message);
     }
   };
 
@@ -253,7 +253,7 @@ function CreditNotes() {
         await loadData();
       } catch (error) {
         console.error('Error deleting credit note:', error);
-        alert('Error deleting credit note: ' + error.message);
+        console.error('Error deleting credit note: ' + error.message);
       }
     }
   };

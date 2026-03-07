@@ -19,7 +19,7 @@ function CSVImport({ onClose, onImportComplete }) {
           setCsvData(results.data);
         },
         error: (error) => {
-          alert('Error parsing CSV: ' + error.message);
+          console.error('Error parsing CSV: ' + error.message);
         }
       });
     }
@@ -27,7 +27,7 @@ function CSVImport({ onClose, onImportComplete }) {
 
   const handleImport = async () => {
     if (!csvData || csvData.length === 0) {
-      alert('No data to import');
+      console.error('No data to import');
       return;
     }
 
@@ -39,7 +39,7 @@ function CSVImport({ onClose, onImportComplete }) {
         onImportComplete();
       }
     } catch (error) {
-      alert('Import failed: ' + error.message);
+      console.error('Import failed: ' + error.message);
     } finally {
       setImporting(false);
     }
