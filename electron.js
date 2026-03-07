@@ -9,6 +9,50 @@ const Stripe = require('stripe');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cron = require('node-cron');
+const Store = require('electron-store');
+const os = require('os');
+const crypto = require('crypto');
+
+// License activation store (persists in OS app data directory)
+const licenseStore = new Store({
+  name: 'license',
+  encryptionKey: 'owninvoice-license-v1',
+  defaults: {
+    licenseKey: null,
+    machineId: null,
+    activated: false,
+    activatedAt: null,
+    email: null,
+  },
+});
+
+// Activation server URL
+const ACTIVATION_SERVER = 'https://gritsoftware.dev';
+
+/**
+ * Generate a deterministic machine ID from hardware identifiers.
+ * Uses hostname + platform + arch + MAC address, hashed with SHA-256.
+ */
+function generateMachineId() {
+  const hostname = os.hostname();
+  const platform = os.platform();
+  const arch = os.arch();
+
+  let macAddress = 'no-mac';
+  const interfaces = os.networkInterfaces();
+  for (const [name, addrs] of Object.entries(interfaces)) {
+    for (const addr of addrs) {
+      if (!addr.internal && addr.mac && addr.mac !== '00:00:00:00:00:00') {
+        macAddress = addr.mac;
+        break;
+      }
+    }
+    if (macAddress !== 'no-mac') break;
+  }
+
+  const raw = `${hostname}|${platform}|${arch}|${macAddress}`;
+  return crypto.createHash('sha256').update(raw).digest('hex').substring(0, 40);
+}
 
 let mainWindow;
 
@@ -2293,6 +2337,71 @@ ipcMain.handle('email:sendInvoiceWithPayment', async (event, emailData) => {
 
     throw new Error(errorMessage);
   }
+});
+
+// ========================================
+// License Activation IPC Handlers
+// ========================================
+
+// Check local license status (no network — reads from electron-store)
+ipcMain.handle('license:check', async () => {
+  const data = licenseStore.store;
+  return {
+    licenseKey: data.licenseKey,
+    activated: data.activated,
+    activatedAt: data.activatedAt,
+    email: data.email,
+  };
+});
+
+// Get machine ID hash
+ipcMain.handle('license:getMachineId', async () => {
+  return generateMachineId();
+});
+
+// Activate license key against the server
+ipcMain.handle('license:activate', async (event, licenseKey) => {
+  const machineId = generateMachineId();
+
+  try {
+    const response = await fetch(`${ACTIVATION_SERVER}/api/activate-license`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenseKey: licenseKey.trim().toUpperCase(), machineId }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      licenseStore.set('licenseKey', licenseKey.trim().toUpperCase());
+      licenseStore.set('machineId', machineId);
+      licenseStore.set('activated', true);
+      licenseStore.set('activatedAt', new Date().toISOString());
+      licenseStore.set('email', data.email || null);
+
+      return { success: true, message: data.message };
+    }
+
+    return {
+      success: false,
+      error: data.error || 'Activation failed',
+      code: data.code || 'UNKNOWN',
+      hint: data.hint || null,
+    };
+  } catch (err) {
+    console.error('License activation network error:', err);
+    return {
+      success: false,
+      error: 'Could not connect to the activation server. Please check your internet connection.',
+      code: 'NETWORK_ERROR',
+    };
+  }
+});
+
+// Deactivate license (for support/debugging)
+ipcMain.handle('license:deactivate', async () => {
+  licenseStore.clear();
+  return { success: true };
 });
 
 // ========================================
