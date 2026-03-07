@@ -2655,10 +2655,39 @@ const restoreQuote = (id) => {
 const convertQuoteToInvoice = (quoteId) => {
   const db = getDatabase();
 
-  // Get the quote from the quotes table
+  // First check the quotes table
   const quote = db.prepare('SELECT * FROM quotes WHERE id = ?').get(quoteId);
+
+  // If not found in quotes table, check for old-style quotes stored in invoices table
   if (!quote) {
-    throw new Error('Quote not found');
+    const oldQuote = db.prepare('SELECT * FROM invoices WHERE id = ? AND type = ?').get(quoteId, 'quote');
+    if (!oldQuote) {
+      throw new Error('Quote not found');
+    }
+
+    // Old-style quote lives in the invoices table — convert it in-place
+    let newInvoiceNumber;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      newInvoiceNumber = generateInvoiceNumber('invoice');
+      const existing = db.prepare('SELECT id FROM invoices WHERE invoice_number = ?').get(newInvoiceNumber);
+      if (!existing) break;
+      attempts++;
+      if (attempts >= maxAttempts) {
+        const timestamp = Date.now().toString().slice(-4);
+        newInvoiceNumber = `${newInvoiceNumber}-${timestamp}`;
+      }
+    }
+
+    db.prepare(`
+      UPDATE invoices SET type = 'invoice', invoice_number = ?, status = 'draft', date = ?
+      WHERE id = ?
+    `).run(newInvoiceNumber, new Date().toISOString().split('T')[0], quoteId);
+
+    const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(quoteId);
+    return { success: true, invoice, invoiceNumber: newInvoiceNumber };
   }
 
   if (quote.converted_to_invoice_id) {
