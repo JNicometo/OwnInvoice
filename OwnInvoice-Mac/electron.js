@@ -2,7 +2,6 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = !app.isPackaged;
-
 const db = require('./database/db');
 const nodemailer = require('nodemailer');
 const Stripe = require('stripe');

@@ -1,0 +1,2 @@
+customer_number,name,email,phone,address,city,state,zip
+CUST001,Example Customer,customer@example.com,(555) 000-0000,123 Example St,Sample City,CA,90000

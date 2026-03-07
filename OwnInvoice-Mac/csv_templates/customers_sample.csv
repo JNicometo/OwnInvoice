@@ -1,0 +1,6 @@
+customer_number,name,email,phone,address,city,state,zip
+CUST001,Acme Corporation,contact@acme.com,(555) 123-4567,123 Main Street,New York,NY,10001
+CUST002,TechStart Inc,info@techstart.com,(555) 234-5678,456 Oak Avenue,San Francisco,CA,94102
+CUST003,Global Services LLC,hello@global.com,(555) 345-6789,789 Pine Road,Chicago,IL,60601
+CUST004,Mountain View Co,sales@mountainview.com,(555) 456-7890,321 Hill Drive,Denver,CO,80201
+CUST005,Coastal Enterprises,admin@coastal.com,(555) 567-8901,654 Beach Blvd,Miami,FL,33101
