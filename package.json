@@ -92,7 +92,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "build/icon.ico",
+      "icon": "build/icon.png",
       "artifactName": "${productName}-${version}-Setup.${ext}",
       "publisherName": "Grit Software",
       "fileAssociations": [
@@ -110,10 +110,7 @@
       "shortcutName": "OwnInvoice Desktop",
       "uninstallDisplayName": "OwnInvoice Desktop",
       "deleteAppDataOnUninstall": true,
-      "runAfterFinish": true,
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico"
+      "runAfterFinish": true
     },
     "mac": {
       "target": [
