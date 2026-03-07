@@ -1168,7 +1168,10 @@ ipcMain.handle('db:deleteQuote', async (event, id) => {
 
 ipcMain.handle('db:archiveQuote', async (event, id) => {
   try {
-    // SQL Server adapter doesn't have this yet, fallback to SQLite
+    if (useSqlServer()) {
+      const adapter = getDbAdapter();
+      return await adapter.archiveQuote(id);
+    }
     return db.archiveQuote(id);
   } catch (error) {
     console.error('Error archiving quote:', error);
@@ -1178,7 +1181,10 @@ ipcMain.handle('db:archiveQuote', async (event, id) => {
 
 ipcMain.handle('db:restoreQuote', async (event, id) => {
   try {
-    // SQL Server adapter doesn't have this yet, fallback to SQLite
+    if (useSqlServer()) {
+      const adapter = getDbAdapter();
+      return await adapter.restoreQuote(id);
+    }
     return db.restoreQuote(id);
   } catch (error) {
     console.error('Error restoring quote:', error);
@@ -1188,7 +1194,10 @@ ipcMain.handle('db:restoreQuote', async (event, id) => {
 
 ipcMain.handle('db:convertQuoteToInvoice', async (event, quoteId) => {
   try {
-    // Complex operation - use SQLite for now
+    if (useSqlServer()) {
+      const adapter = getDbAdapter();
+      return await adapter.convertQuoteToInvoice(quoteId);
+    }
     return db.convertQuoteToInvoice(quoteId);
   } catch (error) {
     console.error('Error converting quote to invoice:', error);

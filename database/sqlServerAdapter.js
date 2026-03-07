@@ -1193,6 +1193,132 @@ class SQLServerAdapter {
     return this.delete('quotes', id);
   }
 
+  async archiveQuote(id) {
+    return this.update('quotes', id, { archived: 1 });
+  }
+
+  async restoreQuote(id) {
+    return this.update('quotes', id, { archived: 0 });
+  }
+
+  async convertQuoteToInvoice(quoteId) {
+    await this.connect();
+
+    // Get the quote
+    const quotes = await this.query(`SELECT * FROM quotes WHERE id = ${quoteId}`);
+    const quote = quotes[0];
+    if (!quote) {
+      throw new Error('Quote not found');
+    }
+
+    if (quote.converted_to_invoice_id) {
+      throw new Error('Quote has already been converted to an invoice');
+    }
+
+    // Generate a unique invoice number
+    let prefix = 'INV-';
+    try {
+      const settings = await this.query(`SELECT * FROM settings WHERE id = 1`);
+      if (settings[0]?.invoice_prefix) {
+        prefix = settings[0].invoice_prefix;
+      }
+    } catch (e) {
+      // settings table may not exist in SQL Server, use default prefix
+    }
+
+    const lastInvoices = await this.query(
+      `SELECT TOP 1 invoice_number FROM invoices WHERE invoice_number LIKE '${prefix.replace(/'/g, "''")}%' ORDER BY id DESC`
+    );
+
+    let newInvoiceNumber;
+    if (!lastInvoices[0]) {
+      newInvoiceNumber = `${prefix}101001`;
+    } else {
+      const lastNumber = parseInt(lastInvoices[0].invoice_number.replace(prefix, ''));
+      const nextNumber = (lastNumber + 1).toString().padStart(6, '0');
+      newInvoiceNumber = `${prefix}${nextNumber}`;
+    }
+
+    // Check uniqueness
+    const existing = await this.query(
+      `SELECT id FROM invoices WHERE invoice_number = '${newInvoiceNumber.replace(/'/g, "''")}'`
+    );
+    if (existing.length > 0) {
+      const timestamp = Date.now().toString().slice(-4);
+      newInvoiceNumber = `${newInvoiceNumber}-${timestamp}`;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const dueDate = quote.expiry_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // Create the invoice
+    const invoiceData = {
+      invoice_number: newInvoiceNumber,
+      client_id: quote.client_id,
+      created_from_quote_id: quoteId,
+      date: today,
+      due_date: dueDate,
+      status: 'draft',
+      subtotal: quote.subtotal || 0,
+      tax: quote.tax || 0,
+      discount_type: quote.discount_type || 'none',
+      discount_value: quote.discount_value || 0,
+      discount_amount: quote.discount_amount || 0,
+      shipping: quote.shipping || 0,
+      adjustment: quote.adjustment || 0,
+      adjustment_label: quote.adjustment_label || '',
+      total: quote.total || 0,
+      notes: quote.notes || '',
+      payment_terms: quote.terms || '',
+      client_name: quote.client_name || '',
+      client_email: quote.client_email || '',
+      client_phone: quote.client_phone || '',
+      client_address: quote.client_address || '',
+      client_city: quote.client_city || '',
+      client_state: quote.client_state || '',
+      client_zip: quote.client_zip || '',
+      billing_address: quote.billing_address || '',
+      billing_city: quote.billing_city || '',
+      billing_state: quote.billing_state || '',
+      billing_zip: quote.billing_zip || '',
+      shipping_address: quote.shipping_address || '',
+      shipping_city: quote.shipping_city || '',
+      shipping_state: quote.shipping_state || '',
+      shipping_zip: quote.shipping_zip || '',
+      tax_id: quote.tax_id || ''
+    };
+
+    const result = await this.insert('invoices', invoiceData);
+    const invoiceId = result.lastInsertRowid;
+
+    // Copy quote items to invoice items
+    const quoteItems = await this.query(`SELECT * FROM quote_items WHERE quote_id = ${quoteId}`);
+    for (const item of quoteItems) {
+      await this.insert('invoice_items', {
+        invoice_id: invoiceId,
+        description: item.description,
+        quantity: item.quantity,
+        rate: item.rate,
+        discount_type: item.discount_type || 'none',
+        discount_value: item.discount_value || 0,
+        discount_amount: item.discount_amount || 0,
+        amount: item.amount,
+        sku: item.sku || '',
+        unit_of_measure: item.unit_of_measure || 'Each'
+      });
+    }
+
+    // Mark the quote as converted
+    await this.update('quotes', quoteId, {
+      converted_to_invoice_id: invoiceId,
+      status: 'accepted'
+    });
+
+    // Return the created invoice
+    const invoices = await this.query(`SELECT * FROM invoices WHERE id = ${invoiceId}`);
+    return { success: true, invoice: invoices[0], invoiceNumber: newInvoiceNumber };
+  }
+
   // ==================== Credit Note Operations ====================
 
   async getAllCreditNotes() {
