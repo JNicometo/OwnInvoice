@@ -161,6 +161,7 @@ contextBridge.exposeInMainWorld('electron', {
       // Whitelist of allowed channels for events
       const validEventChannels = [
         'invoice-payment-received',
+        'app:error',
       ];
 
       if (validEventChannels.includes(channel)) {
@@ -169,9 +170,13 @@ contextBridge.exposeInMainWorld('electron', {
         throw new Error(`Invalid event channel: ${channel}`);
       }
     },
+    removeListener: (channel, callback) => {
+      ipcRenderer.removeListener(channel, callback);
+    },
     removeAllListeners: (channel) => {
       const validEventChannels = [
         'invoice-payment-received',
+        'app:error',
       ];
 
       if (validEventChannels.includes(channel)) {

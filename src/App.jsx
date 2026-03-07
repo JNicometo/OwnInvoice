@@ -25,6 +25,7 @@ function App() {
   const [isSearching, setIsSearching] = useState(false);
   const [navigation, setNavigation] = useState([]);
   const [isLicensed, setIsLicensed] = useState(null); // null=checking, false=show activation, true=show app
+  const [appError, setAppError] = useState('');
   const searchInputRef = useRef(null);
 
   const { getAllInvoices, getAllClients, getAllSavedItems, getSettings } = useDatabase();
@@ -104,6 +105,14 @@ function App() {
       }
     };
     checkLicense();
+  }, []);
+
+  // Listen for uncaught errors from the main process
+  useEffect(() => {
+    if (!window.electron?.ipcRenderer) return;
+    const handler = (message) => setAppError(message);
+    window.electron.ipcRenderer.on('app:error', handler);
+    return () => window.electron.ipcRenderer.removeAllListeners('app:error');
   }, []);
 
   // Dark mode support
@@ -365,6 +374,12 @@ function App() {
   return (
     <ErrorBoundary>
     <div className="flex h-screen bg-gray-100">
+      {appError && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, background: '#c00', color: '#fff', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>App error: {appError}</span>
+          <button onClick={() => setAppError('')} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 18, fontWeight: 'bold' }}>✕</button>
+        </div>
+      )}
       {/* Sidebar */}
       <div className="w-64 bg-white shadow-lg">
         <div className="p-6">

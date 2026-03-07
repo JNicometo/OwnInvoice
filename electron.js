@@ -62,12 +62,9 @@ let mainWindow;
 // Global error handler for better user-facing errors
 process.on('uncaughtException', (error) => {
   console.error('Uncaught exception:', error);
-
-  const { dialog } = require('electron');
-  dialog.showErrorBox(
-    'Application Error',
-    'An unexpected error occurred. Please restart the app.\n\nError: ' + error.message
-  );
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('app:error', error.message);
+  }
 });
 
 // Handle unhandled promise rejections
