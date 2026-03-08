@@ -99,12 +99,12 @@ function CreditNotes() {
     setShowForm(true);
   };
 
-  const handleCloseForm = () => {
+  const handleCloseForm = async () => {
     setShowForm(false);
     setEditingNote(null);
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
 
@@ -123,7 +123,7 @@ function CreditNotes() {
   };
 
   // Handle invoice search
-  const handleInvoiceSearch = (value) => {
+  const handleInvoiceSearch = async (value) => {
     setInvoiceSearch(value);
     setShowInvoiceSearchResults(value.length > 0);
   };
@@ -173,7 +173,7 @@ function CreditNotes() {
     }
   };
 
-  const handleItemChange = (index, field, value) => {
+  const handleItemChange = async (index, field, value) => {
     const newItems = [...items];
     newItems[index][field] = value;
 
@@ -184,17 +184,17 @@ function CreditNotes() {
     setItems(newItems);
   };
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     setItems([...items, { description: '', quantity: 1, rate: 0, amount: 0 }]);
   };
 
-  const handleRemoveItem = (index) => {
+  const handleRemoveItem = async (index) => {
     if (items.length > 1) {
       setItems(items.filter((_, i) => i !== index));
     }
   };
 
-  const calculateTotals = () => {
+  const calculateTotals = async () => {
     const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
     const taxRate = (settings?.tax_rate || 0) / 100;
     const tax = subtotal * taxRate;
@@ -247,7 +247,7 @@ function CreditNotes() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this credit note?')) {
+    if (await window.customConfirm('Are you sure you want to delete this credit note?')) {
       try {
         await deleteCreditNote(id);
         await loadData();
@@ -263,7 +263,7 @@ function CreditNotes() {
     return note.status === filterStatus;
   });
 
-  const getStatusBadgeColor = (status) => {
+  const getStatusBadgeColor = async (status) => {
     switch (status) {
       case 'draft': return 'bg-gray-100 text-gray-800';
       case 'issued': return 'bg-blue-100 text-blue-800';

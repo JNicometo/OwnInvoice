@@ -36,7 +36,7 @@ function Archive() {
     }
   };
 
-  const filterInvoices = () => {
+  const filterInvoices = async () => {
     if (!searchTerm) {
       setFilteredInvoices(archivedInvoices);
       return;
@@ -50,7 +50,7 @@ function Archive() {
   };
 
   const handleRestore = async (id, invoiceNumber) => {
-    if (window.confirm(`Restore invoice ${invoiceNumber}?`)) {
+    if (await window.customConfirm(`Restore invoice ${invoiceNumber}?`)) {
       try {
         await restoreInvoice(id);
         await loadArchivedInvoices();
@@ -61,7 +61,7 @@ function Archive() {
   };
 
   const handlePermanentDelete = async (id, invoiceNumber) => {
-    if (window.confirm(
+    if (await window.customConfirm(
       `PERMANENTLY delete invoice ${invoiceNumber}? This action cannot be undone!`
     )) {
       try {
@@ -73,12 +73,12 @@ function Archive() {
     }
   };
 
-  const handleView = (invoice) => {
+  const handleView = async (invoice) => {
     setSelectedInvoice(invoice);
     setShowPreview(true);
   };
 
-  const handlePreviewClose = () => {
+  const handlePreviewClose = async () => {
     setShowPreview(false);
     setSelectedInvoice(null);
   };

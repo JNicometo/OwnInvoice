@@ -67,7 +67,7 @@ function SavedItems() {
     }
   };
 
-  const handleOpenForm = (item = null) => {
+  const handleOpenForm = async (item = null) => {
     if (item) {
       setEditingItem(item);
       setFormData({
@@ -109,7 +109,7 @@ function SavedItems() {
     setShowForm(true);
   };
 
-  const handleCloseForm = () => {
+  const handleCloseForm = async () => {
     setShowForm(false);
     setEditingItem(null);
     setFormData({
@@ -131,7 +131,7 @@ function SavedItems() {
     setErrors({});
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => {
       const updated = {
@@ -201,7 +201,7 @@ function SavedItems() {
   };
 
   const handleDelete = async (id, description) => {
-    if (window.confirm(`Delete "${description}"?`)) {
+    if (await window.customConfirm(`Delete "${description}"?`)) {
       try {
         await deleteSavedItem(id);
         await loadSavedItems();
@@ -212,7 +212,7 @@ function SavedItems() {
   };
 
   // CSV Import Functions
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -225,7 +225,7 @@ function SavedItems() {
     parseCSV(file);
   };
 
-  const parseCSV = (file) => {
+  const parseCSV = async (file) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -238,7 +238,7 @@ function SavedItems() {
     });
   };
 
-  const validateCSVData = (data) => {
+  const validateCSVData = async (data) => {
     const requiredFields = ['item_number', 'description', 'rate'];
     const errors = [];
     const validData = [];
@@ -333,14 +333,14 @@ function SavedItems() {
     }
   };
 
-  const handleCloseImportModal = () => {
+  const handleCloseImportModal = async () => {
     setShowImportModal(false);
     setCsvFile(null);
     setCsvData([]);
     setCsvErrors([]);
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const template = 'item_number,description,rate,category\nITEM001,Example Service,100.00,Services';
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

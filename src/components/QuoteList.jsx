@@ -98,7 +98,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
     }
   }, [selectedClientId, loadClientName]);
 
-  const clearAllFilters = () => {
+  const clearAllFilters = async () => {
     setSearchTerm('');
     setStatusFilter('all');
     setDateFrom('');
@@ -113,7 +113,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
   const hasActiveFilters = searchTerm || statusFilter !== 'all' || dateFrom || dateTo || clientFilter || selectedClientId;
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this quote?')) {
+    if (await window.customConfirm('Are you sure you want to delete this quote?')) {
       try {
         await deleteQuote(id);
         await loadQuotes();
@@ -125,7 +125,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
 
 
   const handleArchive = async (id) => {
-    if (window.confirm('Archive this quote?')) {
+    if (await window.customConfirm('Archive this quote?')) {
       try {
         await archiveQuote(id);
         await loadQuotes();
@@ -136,7 +136,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
   };
 
   const handleConvertToInvoice = async (quoteId) => {
-    if (window.confirm('Convert this quote to an invoice? This cannot be undone.')) {
+    if (await window.customConfirm('Convert this quote to an invoice? This cannot be undone.')) {
       try {
         const result = await convertQuoteToInvoice(quoteId);
         console.log(`Quote converted! Invoice #${result.invoice.invoice_number} created.`);
@@ -148,12 +148,12 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
     }
   };
 
-  const handleEdit = (quote) => {
+  const handleEdit = async (quote) => {
     setSelectedQuote(quote);
     setShowForm(true);
   };
 
-  const handleView = (quote) => {
+  const handleView = async (quote) => {
     console.log('QuoteList: handleView called with quote:', quote);
     console.log('QuoteList: Quote ID:', quote.id, 'Quote Number:', quote.quote_number);
     setSelectedQuote(quote);
@@ -168,18 +168,18 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
     }
   };
 
-  const handlePreviewClose = () => {
+  const handlePreviewClose = async () => {
     setShowPreview(false);
     setSelectedQuote(null);
   };
 
-  const handleToggleInvoice = (id) => {
+  const handleToggleInvoice = async (id) => {
     setSelectedQuotes(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
 
-  const handleToggleAll = () => {
+  const handleToggleAll = async () => {
     if (selectedQuotes.length === filteredQuotes.length) {
       setSelectedQuotes([]);
     } else {
@@ -191,7 +191,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
     if (selectedQuotes.length === 0) return;
     console.error('Bulk operations for quotes are not yet available. Please update quotes individually.');
     // Batch operations not yet implemented
-    // if (window.confirm(`Mark ${selectedQuotes.length} quote(s) as paid?`)) {
+    // if (await window.customConfirm(`Mark ${selectedQuotes.length} quote(s) as paid?`)) {
     //   try {
     //     await batchUpdateQuoteStatus(selectedQuotes, 'paid');
     //     setSelectedQuotes([]);
@@ -206,7 +206,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
     if (selectedQuotes.length === 0) return;
     console.error('Bulk operations for quotes are not yet available. Please archive quotes individually.');
     // Batch operations not yet implemented
-    // if (window.confirm(`Archive ${selectedQuotes.length} quote(s)?`)) {
+    // if (await window.customConfirm(`Archive ${selectedQuotes.length} quote(s)?`)) {
     //   try {
     //     await batchArchiveQuotes(selectedQuotes);
     //     setSelectedQuotes([]);
@@ -221,7 +221,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
     if (selectedQuotes.length === 0) return;
     console.error('Bulk operations for quotes are not yet available. Please delete quotes individually.');
     // Batch operations not yet implemented
-    // if (window.confirm(`Delete ${selectedQuotes.length} quote(s) permanently? This cannot be undone.`)) {
+    // if (await window.customConfirm(`Delete ${selectedQuotes.length} quote(s) permanently? This cannot be undone.`)) {
     //   try {
     //     await batchDeleteQuotes(selectedQuotes);
     //     setSelectedQuotes([]);

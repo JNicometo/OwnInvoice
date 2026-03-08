@@ -26,6 +26,7 @@ function App() {
   const [navigation, setNavigation] = useState([]);
   const [isLicensed, setIsLicensed] = useState(null); // null=checking, false=show activation, true=show app
   const [appError, setAppError] = useState('');
+  const [confirmState, setConfirmState] = useState({ open: false, message: '', resolve: null });
   const searchInputRef = useRef(null);
 
   const { getAllInvoices, getAllClients, getAllSavedItems, getSettings } = useDatabase();
@@ -113,6 +114,14 @@ function App() {
     const handler = (message) => setAppError(message);
     window.electron.ipcRenderer.on('app:error', handler);
     return () => window.electron.ipcRenderer.removeAllListeners('app:error');
+  }, []);
+
+  // Global non-blocking confirm dialog
+  useEffect(() => {
+    window.customConfirm = (message) => new Promise(resolve => {
+      setConfirmState({ open: true, message, resolve });
+    });
+    return () => { delete window.customConfirm; };
   }, []);
 
   // Dark mode support
@@ -371,9 +380,25 @@ function App() {
     return <LicenseActivation onActivated={() => setIsLicensed(true)} />;
   }
 
+  const handleConfirmResponse = (result) => {
+    confirmState.resolve(result);
+    setConfirmState({ open: false, message: '', resolve: null });
+  };
+
   return (
     <ErrorBoundary>
     <div className="flex h-screen bg-gray-100">
+      {confirmState.open && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 8, padding: 24, maxWidth: 400, width: '90%', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            <p style={{ marginBottom: 20, fontSize: 15, color: '#111' }}>{confirmState.message}</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => handleConfirmResponse(false)} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => handleConfirmResponse(true)} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#dc2626', color: '#fff', cursor: 'pointer' }}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
       {appError && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, background: '#c00', color: '#fff', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>App error: {appError}</span>

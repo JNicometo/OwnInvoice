@@ -136,7 +136,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
     setCurrentPage(1);
   }, [searchTerm, statusFilter, clientFilter, dateFrom, dateTo, sortBy, sortOrder, viewType]);
 
-  const clearAllFilters = () => {
+  const clearAllFilters = async () => {
     setSearchTerm('');
     setStatusFilter('all');
     setDateFrom('');
@@ -151,7 +151,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
 
   const handleDelete = async (id) => {
     const label = viewType === 'invoices' ? 'invoice' : 'quote';
-    if (window.confirm(`Are you sure you want to delete this ${label}?`)) {
+    if (await window.customConfirm(`Are you sure you want to delete this ${label}?`)) {
       try {
         if (viewType === 'quotes') {
           await deleteQuote(id);
@@ -167,7 +167,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
 
   const handleArchive = async (id) => {
     const label = viewType === 'invoices' ? 'invoice' : 'quote';
-    if (window.confirm(`Archive this ${label}?`)) {
+    if (await window.customConfirm(`Archive this ${label}?`)) {
       try {
         if (viewType === 'quotes') {
           await archiveQuote(id);
@@ -181,18 +181,18 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
     }
   };
 
-  const handleEdit = (invoice) => {
+  const handleEdit = async (invoice) => {
     setSelectedInvoice(invoice);
     setShowForm(true);
   };
 
-  const handleView = (invoice) => {
+  const handleView = async (invoice) => {
     setSelectedInvoice(invoice);
     setShowPreview(true);
   };
 
   const handleConvertToInvoice = async (quoteId) => {
-    if (window.confirm('Convert this quote to an invoice? This cannot be undone.')) {
+    if (await window.customConfirm('Convert this quote to an invoice? This cannot be undone.')) {
       try {
         const result = await convertQuoteToInvoice(quoteId);
         console.log(`Quote converted to Invoice #${result.invoice.invoice_number}!`);
@@ -212,18 +212,18 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
     }
   };
 
-  const handlePreviewClose = () => {
+  const handlePreviewClose = async () => {
     setShowPreview(false);
     setSelectedInvoice(null);
   };
 
-  const handleToggleInvoice = (id) => {
+  const handleToggleInvoice = async (id) => {
     setSelectedInvoices(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
 
-  const handleToggleAll = () => {
+  const handleToggleAll = async () => {
     if (selectedInvoices.length === filteredInvoices.length) {
       setSelectedInvoices([]);
     } else {
@@ -234,7 +234,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
   const handleBulkMarkPaid = async () => {
     if (selectedInvoices.length === 0) return;
 
-    if (window.confirm(`Mark ${selectedInvoices.length} invoice(s) as paid?`)) {
+    if (await window.customConfirm(`Mark ${selectedInvoices.length} invoice(s) as paid?`)) {
       try {
         await batchUpdateInvoiceStatus(selectedInvoices, 'paid');
         setSelectedInvoices([]);
@@ -248,7 +248,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
   const handleBulkArchive = async () => {
     if (selectedInvoices.length === 0) return;
 
-    if (window.confirm(`Archive ${selectedInvoices.length} invoice(s)?`)) {
+    if (await window.customConfirm(`Archive ${selectedInvoices.length} invoice(s)?`)) {
       try {
         await batchArchiveInvoices(selectedInvoices);
         setSelectedInvoices([]);
@@ -262,7 +262,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
   const handleBulkDelete = async () => {
     if (selectedInvoices.length === 0) return;
 
-    if (window.confirm(`Delete ${selectedInvoices.length} invoice(s) permanently? This cannot be undone.`)) {
+    if (await window.customConfirm(`Delete ${selectedInvoices.length} invoice(s) permanently? This cannot be undone.`)) {
       try {
         await batchDeleteInvoices(selectedInvoices);
         setSelectedInvoices([]);

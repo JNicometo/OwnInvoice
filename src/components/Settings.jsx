@@ -354,7 +354,7 @@ function Settings() {
     }
   };
 
-  const handleLogoUpload = (e) => {
+  const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -386,7 +386,7 @@ function Settings() {
     reader.readAsDataURL(file);
   };
 
-  const handleLogoRemove = () => {
+  const handleLogoRemove = async () => {
     setFormData(prev => ({ ...prev, logo_url: '' }));
     setLogoPreview('');
     if (fileInputRef.current) {
@@ -394,11 +394,11 @@ function Settings() {
     }
   };
 
-  const handleLogoButtonClick = () => {
+  const handleLogoButtonClick = async () => {
     fileInputRef.current?.click();
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
@@ -2135,14 +2135,14 @@ function Settings() {
                       console.error('Error parsing tab configuration:', e);
                     }
 
-                    const handleToggleTab = (tabId) => {
+                    const handleToggleTab = async (tabId) => {
                       const updatedTabs = tabs.map(tab =>
                         tab.id === tabId ? { ...tab, enabled: !tab.enabled } : tab
                       );
                       setFormData(prev => ({ ...prev, tab_configuration: JSON.stringify(updatedTabs) }));
                     };
 
-                    const handleMoveUp = (index) => {
+                    const handleMoveUp = async (index) => {
                       if (index === 0) return;
                       const updatedTabs = [...tabs];
                       const temp = updatedTabs[index];
@@ -2153,7 +2153,7 @@ function Settings() {
                       setFormData(prev => ({ ...prev, tab_configuration: JSON.stringify(updatedTabs) }));
                     };
 
-                    const handleMoveDown = (index) => {
+                    const handleMoveDown = async (index) => {
                       if (index === tabs.length - 1) return;
                       const updatedTabs = [...tabs];
                       const temp = updatedTabs[index];
@@ -2164,7 +2164,7 @@ function Settings() {
                       setFormData(prev => ({ ...prev, tab_configuration: JSON.stringify(updatedTabs) }));
                     };
 
-                    const handleResetToDefaults = () => {
+                    const handleResetToDefaults = async () => {
                       const defaultTabs = [
                         { id: 'dashboard', name: 'Dashboard', enabled: true, order: 0 },
                         { id: 'invoices', name: 'Invoices', enabled: true, order: 1 },
@@ -2933,7 +2933,7 @@ function Settings() {
                         type="button"
                         onClick={async () => {
                           // Confirm before proceeding
-                          const confirmed = window.confirm(
+                          const confirmed = await window.customConfirm(
                             'WARNING: This will permanently delete ALL current data and replace it with the backup data.\n\n' +
                             'Are you absolutely sure you want to continue?\n\n' +
                             'Click OK to proceed or Cancel to abort.'
@@ -3026,7 +3026,7 @@ function Settings() {
 
                             // Show confirmation with file list
                             const fileNames = fileResult.paths.map(p => p.split(/[\\/]/).pop()).join('\n- ');
-                            const confirmed = window.confirm(
+                            const confirmed = await window.customConfirm(
                               `You are about to import the following CSV files:\n\n- ${fileNames}\n\n` +
                               'Existing records with matching IDs will be updated.\n\n' +
                               'Continue with import?'
@@ -3515,7 +3515,7 @@ function Settings() {
 
                               if (checkResult.exists) {
                                 // Database exists - ask if they want to create tables anyway
-                                proceedWithSchema = window.confirm(
+                                proceedWithSchema = await window.customConfirm(
                                   `The database "${formData.sql_server_database}" already exists.\n\n` +
                                   'Do you want to create/update the tables in this database?\n\n' +
                                   '(This will not delete existing data, but will create any missing tables)'

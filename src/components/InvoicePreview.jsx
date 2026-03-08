@@ -79,7 +79,7 @@ function InvoicePreview({ invoice, onClose }) {
     }
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     // Add print class to body and trigger print
     document.body.classList.add('printing');
     setTimeout(() => {
@@ -88,7 +88,7 @@ function InvoicePreview({ invoice, onClose }) {
     }, 100);
   };
 
-  const generateInvoiceHTML = () => {
+  const generateInvoiceHTML = async () => {
     // Apply theme settings
     const bodyFont = settings?.body_font || 'Segoe UI';
     const headingFont = settings?.heading_font || bodyFont;
@@ -551,7 +551,7 @@ function InvoicePreview({ invoice, onClose }) {
     }
   };
 
-  const handleOpenEmailModal = () => {
+  const handleOpenEmailModal = async () => {
     // Populate email template variables
     const subject = (settings?.email_subject_template || 'Invoice {invoice_number} from {company_name}')
       .replace('{invoice_number}', fullInvoice?.invoice_number || '')
@@ -729,12 +729,12 @@ function InvoicePreview({ invoice, onClose }) {
     }
   };
 
-  const handleCopyLink = (link, gateway) => {
+  const handleCopyLink = async (link, gateway) => {
     navigator.clipboard.writeText(link);
     console.log(`${gateway} payment link copied to clipboard!`);
   };
 
-  const handleOpenPaymentModal = () => {
+  const handleOpenPaymentModal = async () => {
     // Reset payment form with remaining balance as suggested amount
     const balanceDue = fullInvoice.total - totalPaid;
     setPaymentData({
@@ -782,7 +782,7 @@ function InvoicePreview({ invoice, onClose }) {
   };
 
   const handleDeletePayment = async (paymentId) => {
-    if (!window.confirm('Are you sure you want to delete this payment? This will update the invoice status.')) {
+    if (!await window.customConfirm('Are you sure you want to delete this payment? This will update the invoice status.')) {
       return;
     }
 
@@ -898,7 +898,7 @@ function InvoicePreview({ invoice, onClose }) {
     }
   };
 
-  const formatCardNumber = (value) => {
+  const formatCardNumber = async (value) => {
     // Remove all non-digits
     const digits = value.replace(/\D/g, '');
     // Add space every 4 digits
@@ -906,7 +906,7 @@ function InvoicePreview({ invoice, onClose }) {
     return formatted;
   };
 
-  const handleCardNumberChange = (e) => {
+  const handleCardNumberChange = async (e) => {
     const formatted = formatCardNumber(e.target.value);
     if (formatted.replace(/\s/g, '').length <= 19) {
       setCardDetails(prev => ({ ...prev, number: formatted }));

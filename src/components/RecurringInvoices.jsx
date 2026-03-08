@@ -83,7 +83,7 @@ function RecurringInvoices() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this recurring invoice?')) {
+    if (await window.customConfirm('Are you sure you want to delete this recurring invoice?')) {
       try {
         await deleteRecurringInvoice(id);
         await loadData();
@@ -114,7 +114,7 @@ function RecurringInvoices() {
   };
 
   const handleGenerateNow = async (id) => {
-    if (window.confirm('Generate an invoice from this schedule now?')) {
+    if (await window.customConfirm('Generate an invoice from this schedule now?')) {
       try {
         const result = await generateInvoiceFromRecurring(id);
         if (result) {
@@ -147,7 +147,7 @@ function RecurringInvoices() {
     }
   };
 
-  const handleOpenForm = () => {
+  const handleOpenForm = async () => {
     setSelectedInvoice(null);
     setFormData({
       client_id: '',

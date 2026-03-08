@@ -63,7 +63,7 @@ function Reminders() {
     }
   };
 
-  const handleCreateTemplate = () => {
+  const handleCreateTemplate = async () => {
     setEditingTemplate(null);
     setTemplateFormData({
       name: '',
@@ -75,7 +75,7 @@ function Reminders() {
     setShowTemplateForm(true);
   };
 
-  const handleEditTemplate = (template) => {
+  const handleEditTemplate = async (template) => {
     setEditingTemplate(template);
     setTemplateFormData({
       name: template.name,
@@ -103,7 +103,7 @@ function Reminders() {
   };
 
   const handleDeleteTemplate = async (id) => {
-    if (window.confirm('Delete this reminder template?')) {
+    if (await window.customConfirm('Delete this reminder template?')) {
       try {
         await deleteReminderTemplate(id);
         await loadData();
@@ -113,7 +113,7 @@ function Reminders() {
     }
   };
 
-  const handleSendReminder = (invoice, template) => {
+  const handleSendReminder = async (invoice, template) => {
     setSelectedInvoice(invoice);
     setSelectedTemplate(template);
 
@@ -124,7 +124,7 @@ function Reminders() {
     setShowSendModal(true);
   };
 
-  const replaceVariables = (text, invoice, client) => {
+  const replaceVariables = async (text, invoice, client) => {
     if (!text) return '';
 
     return text
@@ -169,7 +169,7 @@ function Reminders() {
   };
 
   const handleDeleteReminder = async (id) => {
-    if (window.confirm('Delete this reminder record?')) {
+    if (await window.customConfirm('Delete this reminder record?')) {
       try {
         await deleteInvoiceReminder(id);
         await loadData();
@@ -266,7 +266,7 @@ function Reminders() {
     </div>
   );
 
-  const renderSendReminders = () => {
+  const renderSendReminders = async () => {
     const totalReminders = invoicesNeedingReminders.length;
     const totalPages = Math.ceil(totalReminders / REMINDERS_PER_PAGE);
     const startIndex = (reminderPage - 1) * REMINDERS_PER_PAGE;
@@ -389,7 +389,7 @@ function Reminders() {
     );
   };
 
-  const renderHistory = () => {
+  const renderHistory = async () => {
     // Group reminders by invoice
     const groupedReminders = reminders.reduce((acc, reminder) => {
       const invoiceId = reminder.invoice_id;

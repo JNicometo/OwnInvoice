@@ -260,7 +260,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     setShowModal(true);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseModal = async () => {
     setShowModal(false);
     setEditingClient(null);
     setFormData({
@@ -277,7 +277,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     setErrors({});
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
@@ -311,12 +311,12 @@ function ClientManagement({ onNavigateToInvoices }) {
   const handleDelete = async (id, name) => {
     const stats = clientStats[id];
     if (stats && stats.total_invoices > 0) {
-      const confirmed = window.confirm(
+      const confirmed = await window.customConfirm(
         `${name} has ${stats.total_invoices} invoice(s). Deleting this client will not delete the invoices, but they will lose the client reference. Are you sure?`
       );
       if (!confirmed) return;
     } else {
-      if (!window.confirm(`Delete client ${name}?`)) return;
+      if (!await window.customConfirm(`Delete client ${name}?`)) return;
     }
 
     try {
@@ -337,7 +337,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     }
   };
 
-  const handleAddressInputChange = (e) => {
+  const handleAddressInputChange = async (e) => {
     const { name, value, type, checked } = e.target;
     setAddressFormData(prev => ({
       ...prev,
@@ -368,7 +368,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     }
   };
 
-  const handleEditAddress = (addr) => {
+  const handleEditAddress = async (addr) => {
     setEditingAddressId(addr.id);
     setAddressFormData({
       label: addr.label || '',
@@ -382,7 +382,7 @@ function ClientManagement({ onNavigateToInvoices }) {
   };
 
   const handleDeleteAddress = async (addrId) => {
-    if (!window.confirm('Delete this shipping address?')) return;
+    if (!await window.customConfirm('Delete this shipping address?')) return;
     try {
       await deleteClientAddress(addrId);
       await loadClientAddresses(editingClient.id);
@@ -392,13 +392,13 @@ function ClientManagement({ onNavigateToInvoices }) {
     }
   };
 
-  const handleCancelEditAddress = () => {
+  const handleCancelEditAddress = async () => {
     setEditingAddressId(null);
     setAddressFormData({ label: '', address: '', city: '', state: '', zip: '', country: '', is_default: false });
   };
 
   // CSV Import Functions
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -411,7 +411,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     parseCSV(file);
   };
 
-  const parseCSV = (file) => {
+  const parseCSV = async (file) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -424,7 +424,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     });
   };
 
-  const validateCSVData = (data) => {
+  const validateCSVData = async (data) => {
     const requiredFields = ['customer_number', 'name', 'email'];
     const errors = [];
     const validData = [];
@@ -530,14 +530,14 @@ function ClientManagement({ onNavigateToInvoices }) {
     }
   };
 
-  const handleCloseImportModal = () => {
+  const handleCloseImportModal = async () => {
     setShowImportModal(false);
     setCsvFile(null);
     setCsvData([]);
     setCsvErrors([]);
   };
 
-  const downloadTemplate = () => {
+  const downloadTemplate = async () => {
     const template = 'customer_number,name,email,phone,address,city,state,zip\nCUST001,Example Customer,customer@example.com,(555) 000-0000,123 Example St,Sample City,CA,90000';
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
