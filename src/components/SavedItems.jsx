@@ -196,7 +196,8 @@ function SavedItems() {
       handleCloseForm();
     } catch (error) {
       console.error('Error saving item:', error);
-      console.error('Error saving item: ' + error.message);
+      const errorMessage = error.message || 'Unknown error occurred';
+      console.error('Error saving item: ' + errorMessage);
     }
   };
 

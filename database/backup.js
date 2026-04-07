@@ -32,6 +32,7 @@ const TABLES_TO_BACKUP = [
   'quote_items',
   'credit_notes',
   'credit_note_items',
+  'customer_addresses',
   'reminder_templates',
   'invoice_reminders',
   'customer_addresses',

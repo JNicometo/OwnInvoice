@@ -97,6 +97,7 @@ function QuoteForm({ quote, onClose }) {
   const [customerNumberSearch, setCustomerNumberSearch] = useState('');
   const [showItemSearchModal, setShowItemSearchModal] = useState(false);
   const [currentItemIndex, setCurrentItemIndex] = useState(null);
+  const [activeDescriptionIndex, setActiveDescriptionIndex] = useState(null);
 
   // Quick create modals
   const [showCreateCustomerModal, setShowCreateCustomerModal] = useState(false);
@@ -446,9 +447,9 @@ function QuoteForm({ quote, onClose }) {
     }
 
     try {
-      // Generate quote number only after validation passes and right before saving
+      // Generate quote number - always generate for new quotes to ensure counter increments
       let quoteNumber = formData.quote_number;
-      if (!isEdit && !quoteNumber) {
+      if (!isEdit) {
         quoteNumber = await generateQuoteNumber();
       }
 
@@ -488,7 +489,11 @@ function QuoteForm({ quote, onClose }) {
     } catch (error) {
       console.error('Error saving quote:', error);
       const errorMessage = error.message || error.toString() || 'Unknown error occurred';
-      console.error('Error saving quote: ' + errorMessage);
+      if (errorMessage.includes('Trial limit reached') || errorMessage.includes('Trial expired')) {
+        setFormError(errorMessage + '\n\nVisit gritsoftware.dev to purchase a license.');
+      } else {
+        setFormError('Error saving quote: ' + errorMessage);
+      }
     }
   };
 
@@ -668,14 +673,62 @@ function QuoteForm({ quote, onClose }) {
                     className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-mono"
                     title="Enter item number and press Enter or Tab to auto-fill"
                   />
-                  <input
-                    type="text"
-                    placeholder="Description"
-                    value={item.description}
-                    onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                    required
-                  />
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      placeholder="Description (type to search saved items)"
+                      value={item.description}
+                      onChange={(e) => {
+                        handleItemChange(index, 'description', e.target.value);
+                        setActiveDescriptionIndex(e.target.value.length > 0 ? index : null);
+                      }}
+                      onFocus={() => {
+                        if (item.description.length > 0) setActiveDescriptionIndex(index);
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => setActiveDescriptionIndex(null), 200);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      required
+                    />
+                    {activeDescriptionIndex === index && item.description.length > 0 && (() => {
+                      const query = item.description.toLowerCase();
+                      const matches = savedItems.filter(si =>
+                        si.description.toLowerCase().includes(query) ||
+                        (si.sku && si.sku.toLowerCase().includes(query)) ||
+                        (si.category && si.category.toLowerCase().includes(query))
+                      ).slice(0, 6);
+                      if (matches.length === 0) return null;
+                      if (matches.length === 1 && matches[0].description === item.description) return null;
+                      return (
+                        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {matches.map((si) => (
+                            <button
+                              key={si.id}
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const newItems = [...items];
+                                newItems[index].item_number = si.sku || '';
+                                newItems[index].description = si.description;
+                                newItems[index].rate = si.rate;
+                                newItems[index].amount = calculateItemAmount({ ...newItems[index], rate: si.rate });
+                                setItems(newItems);
+                                setActiveDescriptionIndex(null);
+                              }}
+                              className="w-full text-left px-3 py-2 hover:bg-blue-50 flex justify-between items-center text-sm border-b border-gray-100 last:border-0"
+                            >
+                              <div>
+                                <div className="font-medium text-gray-900">{si.description}</div>
+                                {si.sku && <span className="text-xs text-gray-500">{si.sku}</span>}
+                              </div>
+                              <span className="text-gray-600 font-medium ml-2">${si.rate.toFixed(2)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
                   <input
                     type="number"
                     placeholder="Qty"

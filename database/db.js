@@ -124,8 +124,8 @@ const runMigrations = () => {
       { name: 'invoice_suffix', type: 'TEXT', default: "''" },
       { name: 'invoice_start_number', type: 'TEXT', default: "'1'" },
       { name: 'quote_prefix', type: 'TEXT', default: "'QUO-'" },
-      { name: 'next_invoice_number', type: 'TEXT', default: "'INV-0001'" },
-      { name: 'next_quote_number', type: 'TEXT', default: "'QUO-0001'" },
+      { name: 'next_invoice_number', type: 'TEXT', default: "'INV-000001'" },
+      { name: 'next_quote_number', type: 'TEXT', default: "'QUO-000001'" },
       { name: 'tax_label', type: 'TEXT', default: "'Tax'" },
       { name: 'currency_code', type: 'TEXT', default: "'USD'" },
       { name: 'default_due_days', type: 'TEXT', default: "'30'" },
@@ -2130,6 +2130,54 @@ const getSavedItemBySku = (sku) => {
   }
 };
 
+// Trial limit counts
+const getInvoiceCount = () => {
+  const db = getDatabase();
+  const result = db.prepare("SELECT COUNT(*) as count FROM invoices WHERE archived = 0 AND type = 'invoice'").get();
+  return result.count;
+};
+
+const getQuoteCount = () => {
+  const db = getDatabase();
+  const result = db.prepare("SELECT COUNT(*) as count FROM quotes WHERE archived = 0").get();
+  return result.count;
+};
+
+const getClientCount = () => {
+  const db = getDatabase();
+  const result = db.prepare("SELECT COUNT(*) as count FROM clients").get();
+  return result.count;
+};
+
+const getSavedItemCount = () => {
+  const db = getDatabase();
+  const result = db.prepare("SELECT COUNT(*) as count FROM saved_items").get();
+  return result.count;
+};
+
+const getRecurringInvoiceCount = () => {
+  const db = getDatabase();
+  const result = db.prepare("SELECT COUNT(*) as count FROM recurring_invoices WHERE active = 1").get();
+  return result.count;
+};
+
+const getCreditNoteCount = () => {
+  const db = getDatabase();
+  const result = db.prepare("SELECT COUNT(*) as count FROM credit_notes").get();
+  return result.count;
+};
+
+const getTrialCounts = () => {
+  return {
+    invoices: getInvoiceCount(),
+    quotes: getQuoteCount(),
+    clients: getClientCount(),
+    savedItems: getSavedItemCount(),
+    recurringInvoices: getRecurringInvoiceCount(),
+    creditNotes: getCreditNoteCount(),
+  };
+};
+
 // Dashboard stats
 const getDashboardStats = () => {
   const db = getDatabase();
@@ -2451,11 +2499,11 @@ const generateQuoteNumber = () => {
   const lastQuote = db.prepare('SELECT quote_number FROM quotes ORDER BY id DESC LIMIT 1').get();
 
   if (!lastQuote) {
-    return `${prefix}0001`;
+    return `${prefix}000001`;
   }
 
   const lastNumber = parseInt(lastQuote.quote_number.replace(prefix, ''));
-  const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
+  const nextNumber = (lastNumber + 1).toString().padStart(6, '0');
 
   return `${prefix}${nextNumber}`;
 };
@@ -2475,11 +2523,11 @@ const peekNextQuoteNumber = () => {
   const lastQuote = db.prepare('SELECT quote_number FROM quotes ORDER BY id DESC LIMIT 1').get();
 
   if (!lastQuote) {
-    return `${prefix}0001`;
+    return `${prefix}000001`;
   }
 
   const lastNumber = parseInt(lastQuote.quote_number.replace(prefix, ''));
-  const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
+  const nextNumber = (lastNumber + 1).toString().padStart(6, '0');
   return `${prefix}${nextNumber}`;
 };
 
@@ -2655,12 +2703,15 @@ const restoreQuote = (id) => {
 const convertQuoteToInvoice = (quoteId) => {
   const db = getDatabase();
 
+  // Force to integer if it's a string
+  const numericId = typeof quoteId === 'string' ? parseInt(quoteId, 10) : quoteId;
+
   // First check the quotes table
-  const quote = db.prepare('SELECT * FROM quotes WHERE id = ?').get(quoteId);
+  const quote = db.prepare('SELECT * FROM quotes WHERE id = ?').get(numericId);
 
   // If not found in quotes table, check for old-style quotes stored in invoices table
   if (!quote) {
-    const oldQuote = db.prepare('SELECT * FROM invoices WHERE id = ? AND type = ?').get(quoteId, 'quote');
+    const oldQuote = db.prepare('SELECT * FROM invoices WHERE id = ? AND type = ?').get(numericId, 'quote');
     if (!oldQuote) {
       throw new Error('Quote not found');
     }
@@ -2684,15 +2735,19 @@ const convertQuoteToInvoice = (quoteId) => {
     db.prepare(`
       UPDATE invoices SET type = 'invoice', invoice_number = ?, status = 'draft', date = ?
       WHERE id = ?
-    `).run(newInvoiceNumber, new Date().toISOString().split('T')[0], quoteId);
+    `).run(newInvoiceNumber, new Date().toISOString().split('T')[0], numericId);
 
-    const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(quoteId);
+    const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(numericId);
     return { success: true, invoice, invoiceNumber: newInvoiceNumber };
   }
 
   if (quote.converted_to_invoice_id) {
     throw new Error('Quote has already been converted to an invoice');
   }
+
+  // Get quote items
+  const quoteItems = db.prepare('SELECT * FROM quote_items WHERE quote_id = ?').all(numericId);
+  console.log('5. Quote items found:', quoteItems.length);
 
   // Generate a guaranteed unique invoice number
   let newInvoiceNumber;
@@ -2734,10 +2789,10 @@ const convertQuoteToInvoice = (quoteId) => {
   `).run(
     newInvoiceNumber,
     quote.client_id,
-    quoteId,
+    numericId,
     new Date().toISOString().split('T')[0],
     quote.expiry_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    'draft',
+    'pending',
     quote.subtotal || 0,
     quote.tax || 0,
     quote.discount_type || 'none',
@@ -2770,7 +2825,6 @@ const convertQuoteToInvoice = (quoteId) => {
   const invoiceId = result.lastInsertRowid;
 
   // Copy quote items to invoice items
-  const quoteItems = db.prepare('SELECT * FROM quote_items WHERE quote_id = ?').all(quoteId);
   const itemStmt = db.prepare(`
     INSERT INTO invoice_items (invoice_id, description, quantity, rate, discount_type, discount_value, discount_amount, amount, sku, unit_of_measure)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -2792,10 +2846,11 @@ const convertQuoteToInvoice = (quoteId) => {
   }
 
   // Mark the quote as converted
-  db.prepare('UPDATE quotes SET converted_to_invoice_id = ?, status = ? WHERE id = ?').run(invoiceId, 'accepted', quoteId);
+  db.prepare('UPDATE quotes SET converted_to_invoice_id = ?, status = ? WHERE id = ?').run(invoiceId, 'accepted', numericId);
 
   // Return the created invoice
   const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(invoiceId);
+  console.log('6. Invoice created:', invoice ? 'YES (ID: ' + invoice.id + ')' : 'NO');
   return { success: true, invoice, invoiceNumber: newInvoiceNumber };
 };
 
@@ -2807,11 +2862,11 @@ const generateCreditNoteNumber = () => {
   const lastCreditNote = db.prepare('SELECT credit_note_number FROM credit_notes ORDER BY id DESC LIMIT 1').get();
 
   if (!lastCreditNote) {
-    return `${prefix}0001`;
+    return `${prefix}000001`;
   }
 
   const lastNumber = parseInt(lastCreditNote.credit_note_number.replace(prefix, ''));
-  const nextNumber = (lastNumber + 1).toString().padStart(4, '0');
+  const nextNumber = (lastNumber + 1).toString().padStart(6, '0');
   return `${prefix}${nextNumber}`;
 };
 
@@ -3624,5 +3679,13 @@ module.exports = {
   resetSqlServerAdapter,
   isUsingSqlServer,
   // CSV Import
-  processCSVInvoiceImport
+  processCSVInvoiceImport,
+  // Trial Limits
+  getInvoiceCount,
+  getQuoteCount,
+  getClientCount,
+  getSavedItemCount,
+  getRecurringInvoiceCount,
+  getCreditNoteCount,
+  getTrialCounts
 };

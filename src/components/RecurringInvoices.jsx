@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Eye, Edit, Trash2, Clock, Play, Pause, RefreshCcw, Calendar } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Play, Pause, RefreshCcw, Calendar } from 'lucide-react';
 import { useDatabase } from '../hooks/useDatabase';
-import { formatCurrency, formatDate, getCurrentDate, calculateDueDate, formatDateInput } from '../utils/formatting';
+import { formatCurrency, formatDate, getCurrentDate, formatDateInput } from '../utils/formatting';
 import SearchableSelect from './SearchableSelect';
 
 function RecurringInvoices() {
@@ -28,15 +28,15 @@ function RecurringInvoices() {
   });
 
   const [items, setItems] = useState([
-    { description: '', quantity: 1, rate: 0, amount: 0 }
+    { item_number: '', description: '', quantity: 1, rate: 0, amount: 0 }
   ]);
+  const [activeDescriptionIndex, setActiveDescriptionIndex] = useState(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
   const ITEMS_PER_PAGE = 50;
 
   const {
-    getAllRecurringInvoices,
     getPaginatedRecurringInvoices,
     getRecurringInvoice,
     createRecurringInvoice,
@@ -47,10 +47,6 @@ function RecurringInvoices() {
     getAllSavedItems,
     getSettings
   } = useDatabase();
-
-  useEffect(() => {
-    loadData();
-  }, [currentPage, searchTerm]);
 
   const loadData = async () => {
     try {
@@ -81,6 +77,9 @@ function RecurringInvoices() {
       setLoading(false);
     }
   };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData(); }, [currentPage, searchTerm]);
 
   const handleDelete = async (id) => {
     if (await window.customConfirm('Are you sure you want to delete this recurring invoice?')) {
@@ -140,7 +139,7 @@ function RecurringInvoices() {
         notes: fullInvoice.notes || '',
         payment_terms: fullInvoice.payment_terms || '',
       });
-      setItems(fullInvoice.items || [{ description: '', quantity: 1, rate: 0, amount: 0 }]);
+      setItems(fullInvoice.items || [{ item_number: '', description: '', quantity: 1, rate: 0, amount: 0 }]);
       setShowForm(true);
     } catch (error) {
       console.error('Error loading recurring invoice: ' + error.message);
@@ -158,12 +157,16 @@ function RecurringInvoices() {
       notes: '',
       payment_terms: settings?.payment_terms || '',
     });
-    setItems([{ description: '', quantity: 1, rate: 0, amount: 0 }]);
+    setItems([{ item_number: '', description: '', quantity: 1, rate: 0, amount: 0 }]);
     setShowForm(true);
   };
 
   const calculateItemAmount = (quantity, rate) => {
     return parseFloat(quantity || 0) * parseFloat(rate || 0);
+  };
+
+  const calculateItemAmountObj = (item) => {
+    return parseFloat(item.quantity || 0) * parseFloat(item.rate || 0);
   };
 
   const calculateTotals = () => {
@@ -194,21 +197,12 @@ function RecurringInvoices() {
   };
 
   const handleAddItem = () => {
-    setItems([...items, { description: '', quantity: 1, rate: 0, amount: 0 }]);
+    setItems([...items, { item_number: '', description: '', quantity: 1, rate: 0, amount: 0 }]);
   };
 
   const handleRemoveItem = (index) => {
     if (items.length > 1) {
       setItems(items.filter((_, i) => i !== index));
-    }
-  };
-
-  const handleSavedItemSelect = (index, savedItemId) => {
-    if (!savedItemId) return;
-    const savedItem = savedItems.find(item => item.id === parseInt(savedItemId));
-    if (savedItem) {
-      handleItemChange(index, 'description', savedItem.description);
-      handleItemChange(index, 'rate', savedItem.rate);
     }
   };
 
@@ -252,7 +246,12 @@ function RecurringInvoices() {
       await loadData();
     } catch (error) {
       console.error('Error saving recurring invoice:', error);
-      console.error('Error saving recurring invoice: ' + error.message);
+      const errorMessage = error.message || 'Unknown error occurred';
+      if (errorMessage.includes('Trial limit reached') || errorMessage.includes('Trial expired')) {
+        setFormError(errorMessage + '\n\nVisit gritsoftware.dev to purchase a license.');
+      } else {
+        setFormError('Error saving recurring invoice: ' + errorMessage);
+      }
     }
   };
 
@@ -376,11 +375,11 @@ function RecurringInvoices() {
             {/* Line Items */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Line Items</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Line Items</h2>
                 <button
                   type="button"
                   onClick={handleAddItem}
-                  className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex items-center px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   <Plus className="w-4 h-4 mr-1" />
                   Add Item
@@ -389,72 +388,104 @@ function RecurringInvoices() {
 
               <div className="space-y-3">
                 {items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-3 items-start p-3 bg-gray-50 rounded-lg">
-                    <div className="col-span-5">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                      <textarea
+                  <div key={index} className="flex gap-3 items-start">
+                    <input
+                      type="text"
+                      placeholder="Item #"
+                      value={item.item_number || ''}
+                      onChange={(e) => handleItemChange(index, 'item_number', e.target.value)}
+                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                    />
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        placeholder="Description (type to search saved items)"
                         value={item.description}
-                        onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        rows="2"
-                      />
-                      <SearchableSelect
-                        options={savedItems.map(item => ({
-                          value: item.id,
-                          label: `${item.description} - ${formatCurrency(item.rate)}${item.sku ? ` (${item.sku})` : ''}`
-                        }))}
-                        value={null}
-                        onChange={(option) => {
-                          if (option) {
-                            handleSavedItemSelect(index, option.value);
-                          }
+                        onChange={(e) => {
+                          handleItemChange(index, 'description', e.target.value);
+                          setActiveDescriptionIndex(e.target.value.length > 0 ? index : null);
                         }}
-                        placeholder="Search saved items..."
-                        isClearable={false}
+                        onFocus={() => {
+                          if (item.description.length > 0) setActiveDescriptionIndex(index);
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => setActiveDescriptionIndex(null), 200);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                        required
                       />
+                      {activeDescriptionIndex === index && item.description.length > 0 && (() => {
+                        const query = item.description.toLowerCase();
+                        const matches = savedItems.filter(si =>
+                          si.description.toLowerCase().includes(query) ||
+                          (si.sku && si.sku.toLowerCase().includes(query)) ||
+                          (si.category && si.category.toLowerCase().includes(query))
+                        ).slice(0, 6);
+                        if (matches.length === 0) return null;
+                        if (matches.length === 1 && matches[0].description === item.description) return null;
+                        return (
+                          <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {matches.map((si) => (
+                              <button
+                                key={si.id}
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  const newItems = [...items];
+                                  newItems[index].item_number = si.sku || '';
+                                  newItems[index].description = si.description;
+                                  newItems[index].rate = si.rate;
+                                  newItems[index].amount = calculateItemAmountObj({ ...newItems[index], rate: si.rate });
+                                  setItems(newItems);
+                                  setActiveDescriptionIndex(null);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-blue-50 flex justify-between items-center text-sm border-b border-gray-100 last:border-0"
+                              >
+                                <div>
+                                  <div className="font-medium text-gray-900">{si.description}</div>
+                                  {si.sku && <span className="text-xs text-gray-500">{si.sku}</span>}
+                                </div>
+                                <span className="text-gray-600 font-medium ml-2">${si.rate.toFixed(2)}</span>
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
-
-                    <div className="col-span-2">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Qty</label>
-                      <input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Rate</label>
-                      <input
-                        type="number"
-                        value={item.rate}
-                        onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Amount</label>
-                      <div className="px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-semibold">
-                        ${item.amount.toFixed(2)}
-                      </div>
-                    </div>
-
-                    <div className="col-span-1 flex items-end">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(index)}
-                        className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded"
-                        disabled={items.length === 1}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <input
+                      type="number"
+                      placeholder="Qty"
+                      value={item.quantity}
+                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                      className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                    <input
+                      type="number"
+                      placeholder="Rate"
+                      value={item.rate}
+                      onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
+                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                    <input
+                      type="text"
+                      value={`$${(item.amount || 0).toFixed(2)}`}
+                      readOnly
+                      className="w-28 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(index)}
+                      className="text-red-500 hover:text-red-700 p-2"
+                      disabled={items.length === 1}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>

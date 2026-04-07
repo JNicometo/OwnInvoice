@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Printer, Download, Mail, DollarSign, CreditCard, Trash2 } from 'lucide-react';
+import { X, Printer, Download, Mail, DollarSign, CreditCard, Trash2, Edit } from 'lucide-react';
 import { useDatabase } from '../hooks/useDatabase';
 import { formatCurrency, formatDate } from '../utils/formatting';
 
-function InvoicePreview({ invoice, onClose }) {
+function InvoicePreview({ invoice, onClose, onEdit }) {
   const [fullInvoice, setFullInvoice] = useState(null);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -486,16 +486,28 @@ function InvoicePreview({ invoice, onClose }) {
               <span class="t-label">Subtotal</span>
               <span class="t-val">${formatCurrency(fullInvoice?.subtotal || 0)}</span>
             </div>
-            ${fullInvoice?.discount ? `
+            ${fullInvoice?.discount_amount ? `
             <div class="t-row">
-              <span class="t-label">Discount</span>
-              <span class="t-val">-${formatCurrency(fullInvoice.discount)}</span>
+              <span class="t-label">Discount${fullInvoice.discount_type === 'percentage' ? ` (${fullInvoice.discount_value}%)` : ''}</span>
+              <span class="t-val">-${formatCurrency(fullInvoice.discount_amount)}</span>
+            </div>
+            ` : ''}
+            ${fullInvoice?.shipping ? `
+            <div class="t-row">
+              <span class="t-label">Shipping</span>
+              <span class="t-val">${formatCurrency(fullInvoice.shipping)}</span>
             </div>
             ` : ''}
             <div class="t-row">
               <span class="t-label">Tax (${settings?.tax_rate || 0}%)</span>
               <span class="t-val">${formatCurrency(fullInvoice?.tax || 0)}</span>
             </div>
+            ${fullInvoice?.adjustment ? `
+            <div class="t-row">
+              <span class="t-label">${fullInvoice.adjustment_label || 'Adjustment'}</span>
+              <span class="t-val">${fullInvoice.adjustment > 0 ? '' : '-'}${formatCurrency(Math.abs(fullInvoice.adjustment))}</span>
+            </div>
+            ` : ''}
             <hr class="t-line">
             <div class="t-total">
               <span class="t-label">Total Due</span>
@@ -930,6 +942,15 @@ function InvoicePreview({ invoice, onClose }) {
         <div className="flex justify-between items-center mb-6 print:hidden">
           <h1 className="text-3xl font-bold text-gray-900">Invoice Preview</h1>
           <div className="flex space-x-3">
+            {onEdit && (
+              <button
+                onClick={() => onEdit(invoice)}
+                className="flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </button>
+            )}
             <button
               onClick={handlePrint}
               className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
@@ -1792,16 +1813,28 @@ function InvoicePreview({ invoice, onClose }) {
                 <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Subtotal</span>
                 <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullInvoice.subtotal)}</span>
               </div>
-              {fullInvoice.discount > 0 && (
+              {fullInvoice.discount_amount > 0 && (
                 <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
-                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Discount</span>
-                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>-{formatCurrency(fullInvoice.discount)}</span>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Discount{fullInvoice.discount_type === 'percentage' ? ` (${fullInvoice.discount_value}%)` : ''}</span>
+                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>-{formatCurrency(fullInvoice.discount_amount)}</span>
+                </div>
+              )}
+              {fullInvoice.shipping > 0 && (
+                <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Shipping</span>
+                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullInvoice.shipping)}</span>
                 </div>
               )}
               <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
                 <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Tax ({settings?.tax_rate || 0}%)</span>
                 <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullInvoice.tax)}</span>
               </div>
+              {fullInvoice.adjustment !== 0 && fullInvoice.adjustment != null && (
+                <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>{fullInvoice.adjustment_label || 'Adjustment'}</span>
+                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{fullInvoice.adjustment > 0 ? '' : '-'}{formatCurrency(Math.abs(fullInvoice.adjustment))}</span>
+                </div>
+              )}
               <hr style={{ border: 'none', height: '1px', background: '#e2e8f0', margin: '4px 0' }} />
               <div className="flex justify-between items-baseline" style={{ paddingTop: '10px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: settings?.invoice_header_color || '#0f172a' }}>Total Due</span>

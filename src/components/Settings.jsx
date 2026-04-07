@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Building, FileText, Palette, Check, Settings as SettingsIcon, Globe, Mail, Hash, Upload, X as XIcon, Type, Layout, Paintbrush, Eye, CreditCard, HardDrive, Download, UploadCloud, Database, Server, DollarSign, ChevronDown, Sun, Moon, Monitor } from 'lucide-react';
+import { Save, Building, FileText, Palette, Check, Settings as SettingsIcon, Globe, Mail, Hash, Upload, X as XIcon, Type, Layout, Paintbrush, Eye, CreditCard, HardDrive, Download, UploadCloud, Database, Server, DollarSign, ChevronDown, Sun, Moon, Monitor, Key, Shield, ShieldCheck } from 'lucide-react';
 import { useDatabase } from '../hooks/useDatabase';
 import { validateSettings } from '../utils/validation';
 
-function Settings() {
+function Settings({ isLicensed, onLicenseChange }) {
   const [activeTab, setActiveTab] = useState('company');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -17,6 +17,15 @@ function Settings() {
     gocardless: false,
     authorizenet: false,
   });
+
+  // License state
+  const [licenseKey, setLicenseKey] = useState('');
+  const [licenseError, setLicenseError] = useState(null);
+  const [licenseSuccess, setLicenseSuccess] = useState(null);
+  const [isActivating, setIsActivating] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+  const [machineId, setMachineId] = useState('');
+  const [trialStatus, setTrialStatus] = useState(null);
 
   const fileInputRef = useRef(null);
   const { getSettings, updateSettings } = useDatabase();
@@ -179,7 +188,98 @@ function Settings() {
 
   useEffect(() => {
     loadSettings();
+    loadLicenseInfo();
   }, []);
+
+  const loadLicenseInfo = async () => {
+    try {
+      const { ipcRenderer } = window.electron;
+      const mid = await ipcRenderer.invoke('license:getMachineId');
+      setMachineId(mid);
+      const trial = await ipcRenderer.invoke('license:getTrialStatus');
+      setTrialStatus(trial);
+    } catch (err) {
+      console.error('Error loading license info:', err);
+    }
+  };
+
+  const handleLicenseActivate = async (e) => {
+    e.preventDefault();
+    setLicenseError(null);
+    setLicenseSuccess(null);
+
+    if (!licenseKey.trim()) {
+      setLicenseError('Please enter a license key');
+      return;
+    }
+
+    setIsActivating(true);
+    try {
+      const { ipcRenderer } = window.electron;
+      const result = await ipcRenderer.invoke('license:activate', licenseKey);
+
+      if (result.success) {
+        setLicenseSuccess('License activated successfully!');
+        setLicenseKey('');
+        if (onLicenseChange) onLicenseChange(true);
+        loadLicenseInfo();
+      } else {
+        if (result.code === 'MACHINE_MISMATCH') {
+          setLicenseError('This license key is already activated on a different computer. Contact jnicometo@gritsoftware.dev for assistance.');
+        } else if (result.code === 'KEY_NOT_FOUND') {
+          setLicenseError('License key not found. Please check the key and try again.');
+        } else if (result.code === 'NETWORK_ERROR') {
+          setLicenseError('Could not connect to the activation server. Please check your internet connection.');
+        } else {
+          setLicenseError(result.error || 'Activation failed. Please try again.');
+        }
+      }
+    } catch (err) {
+      setLicenseError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsActivating(false);
+    }
+  };
+
+  const handleLicenseDeactivate = async () => {
+    if (!window.confirm('Are you sure you want to deactivate your license? You will revert to trial mode.')) return;
+
+    setIsDeactivating(true);
+    setLicenseError(null);
+    setLicenseSuccess(null);
+    try {
+      const { ipcRenderer } = window.electron;
+      const result = await ipcRenderer.invoke('license:deactivate');
+      if (result.success) {
+        setLicenseSuccess('License deactivated. You are now in trial mode.');
+        if (onLicenseChange) onLicenseChange(false);
+        loadLicenseInfo();
+      } else {
+        setLicenseError(result.error || 'Deactivation failed.');
+      }
+    } catch (err) {
+      setLicenseError('An unexpected error occurred.');
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
+
+  const handleLicenseKeyInput = (e) => {
+    let value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    const stripped = value.replace(/-/g, '');
+    if (stripped.length <= 5) {
+      value = stripped;
+    } else {
+      const parts = [];
+      parts.push(stripped.substring(0, 5));
+      for (let i = 5; i < stripped.length && parts.length < 5; i += 5) {
+        parts.push(stripped.substring(i, i + 5));
+      }
+      value = parts.join('-');
+    }
+    if (value.length > 29) value = value.substring(0, 29);
+    setLicenseKey(value);
+  };
 
   const loadSettings = async () => {
     try {
@@ -452,6 +552,7 @@ function Settings() {
     { id: 'backup', name: 'Backup & Restore', icon: HardDrive },
     { id: 'sqlserver', name: 'SQL Server', icon: Database },
     { id: 'theme', name: 'Theme', icon: Palette },
+    { id: 'license', name: 'License', icon: Key },
   ];
 
   const themes = [
@@ -3615,7 +3716,162 @@ function Settings() {
                 </div>
               )}
 
-              {/* Save Button */}
+              {/* License Tab */}
+              {activeTab === 'license' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">License Management</h2>
+                    <p className="text-sm text-gray-600 mb-6">
+                      Manage your OwnInvoice license to unlock all features.
+                    </p>
+                  </div>
+
+                  {/* Current Status */}
+                  <div className={`p-4 rounded-lg border ${isLicensed ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+                    <div className="flex items-center gap-3">
+                      {isLicensed ? (
+                        <ShieldCheck className="w-8 h-8 text-green-600" />
+                      ) : (
+                        <Shield className="w-8 h-8 text-amber-600" />
+                      )}
+                      <div>
+                        <h3 className={`font-semibold ${isLicensed ? 'text-green-800' : 'text-amber-800'}`}>
+                          {isLicensed ? 'Licensed - All Features Unlocked' : 'Trial Mode'}
+                        </h3>
+                        <p className={`text-sm ${isLicensed ? 'text-green-700' : 'text-amber-700'}`}>
+                          {isLicensed
+                            ? 'Your copy of OwnInvoice is fully activated.'
+                            : 'All features are accessible with usage limits. Activate a license to unlock unlimited usage.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Trial Limits (only show when unlicensed) */}
+                  {!isLicensed && trialStatus && (
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Trial Limits</h3>
+                      {trialStatus.trialExpired ? (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-3">
+                          <p className="text-sm text-red-700 font-medium">Your 7-day trial has expired. Activate a license to continue creating invoices, quotes, and more.</p>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-3">
+                          <p className="text-sm text-blue-700 font-medium">
+                            {trialStatus.trialDaysRemaining ?? 7} day{(trialStatus.trialDaysRemaining ?? 7) === 1 ? '' : 's'} remaining in your trial
+                          </p>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          { label: 'Invoices', used: trialStatus.counts?.invoices ?? 0, limit: trialStatus.limits?.invoices ?? 5 },
+                          { label: 'Quotes', used: trialStatus.counts?.quotes ?? 0, limit: trialStatus.limits?.quotes ?? 5 },
+                          { label: 'Clients', used: trialStatus.counts?.clients ?? 0, limit: trialStatus.limits?.clients ?? 5 },
+                          { label: 'Saved Items', used: trialStatus.counts?.savedItems ?? 0, limit: trialStatus.limits?.savedItems ?? 5 },
+                          { label: 'Recurring Invoices', used: trialStatus.counts?.recurringInvoices ?? 0, limit: trialStatus.limits?.recurringInvoices ?? 5 },
+                          { label: 'Credit Notes', used: trialStatus.counts?.creditNotes ?? 0, limit: trialStatus.limits?.creditNotes ?? 5 },
+                        ].map((item) => (
+                          <div key={item.label} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span className="text-sm text-gray-700">{item.label}</span>
+                            <span className={`text-sm font-semibold ${item.used >= item.limit ? 'text-red-600' : 'text-gray-900'}`}>
+                              {item.used} / {item.limit}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Activate License */}
+                  {!isLicensed && (
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Activate License</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">License Key</label>
+                          <input
+                            type="text"
+                            value={licenseKey}
+                            onChange={handleLicenseKeyInput}
+                            placeholder="OWNIV-XXXXX-XXXXX-XXXXX-XXXXX"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm tracking-wider focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            disabled={isActivating}
+                          />
+                        </div>
+
+                        {licenseError && (
+                          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-sm text-red-700">{licenseError}</p>
+                          </div>
+                        )}
+
+                        {licenseSuccess && (
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-sm text-green-700">{licenseSuccess}</p>
+                          </div>
+                        )}
+
+                        <button
+                          onClick={handleLicenseActivate}
+                          disabled={isActivating || !licenseKey.trim()}
+                          className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isActivating ? 'Activating...' : 'Activate License'}
+                        </button>
+
+                        <div className="text-center pt-2">
+                          <p className="text-sm text-gray-500">
+                            Don't have a license?{' '}
+                            <a href="https://gritsoftware.dev" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                              Purchase here
+                            </a>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Deactivate License */}
+                  {isLicensed && (
+                    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">Deactivate License</h3>
+                      <p className="text-sm text-gray-600 mb-3">
+                        Deactivating will revert to trial mode. You can re-activate the same key on this or another machine.
+                      </p>
+
+                      {licenseError && (
+                        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-700">{licenseError}</p>
+                        </div>
+                      )}
+
+                      {licenseSuccess && (
+                        <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm text-green-700">{licenseSuccess}</p>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={handleLicenseDeactivate}
+                        disabled={isDeactivating}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition disabled:opacity-50"
+                      >
+                        {isDeactivating ? 'Deactivating...' : 'Deactivate License'}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Machine ID */}
+                  <div className="text-center pt-2">
+                    <p className="text-xs text-gray-400">
+                      Machine ID: <code className="bg-gray-100 px-2 py-0.5 rounded">{machineId ? machineId.substring(0, 12) + '...' : '...'}</code>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Save Button (hidden on license tab since it has its own actions) */}
+              {activeTab !== 'license' && (
               <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
                 {successMessage && (
                   <div className="flex items-center text-green-600">
@@ -3634,6 +3890,7 @@ function Settings() {
                   {saving ? 'Saving...' : 'Save Settings'}
                 </button>
               </div>
+              )}
             </div>
           </form>
         </div>

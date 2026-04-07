@@ -100,6 +100,9 @@ function App() {
         const { ipcRenderer } = window.electron;
         const status = await ipcRenderer.invoke('license:check');
         setIsLicensed(status.activated === true);
+        // Load trial status (counts/limits) for UI display
+        const trial = await ipcRenderer.invoke('license:getTrialStatus');
+        setTrialStatus(trial);
       } catch (err) {
         console.error('License check error:', err);
         setIsLicensed(false);
@@ -221,7 +224,9 @@ function App() {
   }, [getSettings]);
 
   useEffect(() => {
-    loadNavigation();
+    if (isLicensed !== null) {
+      loadNavigation();
+    }
 
     // Listen for navigation updates from Settings
     const handleNavigationUpdate = () => {
@@ -234,7 +239,7 @@ function App() {
     return () => {
       window.removeEventListener('navigation-updated', handleNavigationUpdate);
     };
-  }, [loadNavigation]);
+  }, [loadNavigation, isLicensed]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -357,7 +362,7 @@ function App() {
       case 'archive':
         return <ArchiveComponent />;
       case 'settings':
-        return <Settings />;
+        return <Settings isLicensed={isLicensed} onLicenseChange={(licensed) => setIsLicensed(licensed)} />;
       default:
         return <Dashboard onNavigateToInvoices={handleNavigateToInvoices} />;
     }
@@ -384,6 +389,7 @@ function App() {
     confirmState.resolve(result);
     setConfirmState({ open: false, message: '', resolve: null });
   };
+
 
   return (
     <ErrorBoundary>
@@ -459,8 +465,57 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {renderView()}
+      <div className="flex-1 overflow-auto flex flex-col">
+        {/* Trial Banner */}
+        {!isLicensed && trialStatus && (
+          <div className={`${trialStatus.trialExpired ? 'bg-gradient-to-r from-red-600 to-red-700' : 'bg-gradient-to-r from-blue-600 to-blue-700'} text-white px-4 py-2.5 flex items-center justify-between flex-shrink-0`}>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-semibold">
+                {trialStatus.trialExpired
+                  ? 'Trial Expired'
+                  : `Trial Mode \u2014 ${trialStatus.trialDaysRemaining ?? 7} day${(trialStatus.trialDaysRemaining ?? 7) === 1 ? '' : 's'} left`}
+              </span>
+              {!trialStatus.trialExpired && (
+                <>
+                  <span className="opacity-90">
+                    Invoices: {trialStatus.counts?.invoices ?? 0}/{trialStatus.limits?.invoices ?? 5}
+                  </span>
+                  <span className="opacity-90">
+                    Quotes: {trialStatus.counts?.quotes ?? 0}/{trialStatus.limits?.quotes ?? 5}
+                  </span>
+                  <span className="opacity-90">
+                    Clients: {trialStatus.counts?.clients ?? 0}/{trialStatus.limits?.clients ?? 5}
+                  </span>
+                  <span className="opacity-90">
+                    Items: {trialStatus.counts?.savedItems ?? 0}/{trialStatus.limits?.savedItems ?? 5}
+                  </span>
+                </>
+              )}
+              {trialStatus.trialExpired && (
+                <span className="opacity-90">Activate a license to continue using OwnInvoice.</span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <a
+                href="https://gritsoftware.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`px-4 py-1.5 bg-white ${trialStatus.trialExpired ? 'text-red-700' : 'text-blue-700'} rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors`}
+              >
+                {trialStatus.trialExpired ? 'Get a License' : 'Upgrade'}
+              </a>
+              <button
+                onClick={() => setCurrentView('settings')}
+                className={`text-sm ${trialStatus.trialExpired ? 'text-red-200' : 'text-blue-200'} hover:text-white transition-colors`}
+              >
+                Activate License
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="flex-1 overflow-auto">
+          {renderView()}
+        </div>
       </div>
 
       {/* Global Search Modal */}

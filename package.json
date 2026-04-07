@@ -29,9 +29,10 @@
   "author": "Your Name",
   "license": "MIT",
   "devDependencies": {
+    "@electron/notarize": "^3.1.1",
     "autoprefixer": "^10.4.16",
     "concurrently": "^8.2.2",
-    "electron": "^27.0.0",
+    "electron": "^27.3.11",
     "electron-builder": "^24.6.4",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
@@ -95,6 +96,12 @@
       "icon": "build/icon.png",
       "artifactName": "${productName}-${version}-Setup.${ext}",
       "publisherName": "Grit Software",
+      "signingHashAlgorithms": [
+        "sha256"
+      ],
+      "sign": null,
+      "certificateFile": null,
+      "certificatePassword": null,
       "fileAssociations": [
         {
           "ext": "invoice",
@@ -124,10 +131,12 @@
       ],
       "icon": "build/icon.icns",
       "category": "public.app-category.business",
+      "identity": "Joseph Nicometo (2RN3L67DH4)",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": false
     },
     "dmg": {
       "contents": [

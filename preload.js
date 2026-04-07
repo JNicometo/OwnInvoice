@@ -149,6 +149,8 @@ contextBridge.exposeInMainWorld('electron', {
         'license:activate',
         'license:getMachineId',
         'license:deactivate',
+        'license:getTrialStatus',
+        'license:serverCheck',
       ];
 
       if (validChannels.includes(channel)) {

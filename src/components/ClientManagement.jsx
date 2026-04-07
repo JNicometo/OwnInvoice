@@ -304,7 +304,8 @@ function ClientManagement({ onNavigateToInvoices }) {
       handleCloseModal();
     } catch (error) {
       console.error('Error saving client:', error);
-      console.error('Error saving client: ' + error.message);
+      const errorMessage = error.message || 'Unknown error occurred';
+      console.error('Error saving client: ' + errorMessage);
     }
   };
 

@@ -38,7 +38,7 @@ function InvoiceForm({ invoice, onClose }) {
     date: getCurrentDate(),
     due_date: calculateDueDate(getCurrentDate(), 30),
     status: 'draft',
-    type: 'invoice', // Can be 'invoice' or 'quote'
+    type: 'invoice',
     notes: '',
     payment_terms: '',
     discount_type: 'none',
@@ -60,6 +60,7 @@ function InvoiceForm({ invoice, onClose }) {
   const [clientSearch, setClientSearch] = useState('');
   const [showItemSearchModal, setShowItemSearchModal] = useState(false);
   const [currentItemIndex, setCurrentItemIndex] = useState(null);
+  const [activeDescriptionIndex, setActiveDescriptionIndex] = useState(null);
 
   // Quick create/edit modals
   const [editingCustomer, setEditingCustomer] = useState(null);
@@ -229,7 +230,7 @@ function InvoiceForm({ invoice, onClose }) {
         getAllClients(),
         getAllSavedItems(),
         getSettings(),
-        !isEdit ? peekNextInvoiceNumber(formData.type || 'invoice') : Promise.resolve(null)
+        !isEdit ? peekNextInvoiceNumber('invoice') : Promise.resolve(null)
       ]);
 
       setClients(clientsData);
@@ -582,10 +583,10 @@ function InvoiceForm({ invoice, onClose }) {
     }
 
     try {
-      // Generate invoice number only after validation passes and right before saving
+      // Generate invoice number - always generate for new invoices to ensure counter increments
       let invoiceNumber = formData.invoice_number;
-      if (!isEdit && !invoiceNumber) {
-        invoiceNumber = await generateInvoiceNumber(formData.type || 'invoice');
+      if (!isEdit) {
+        invoiceNumber = await generateInvoiceNumber('invoice');
       }
 
       const totals = calculateTotals();
@@ -631,7 +632,11 @@ function InvoiceForm({ invoice, onClose }) {
     } catch (error) {
       console.error('Error saving invoice:', error);
       const errorMessage = error.message || error.toString() || 'Unknown error occurred';
-      console.error('Error saving invoice: ' + errorMessage);
+      if (errorMessage.includes('Trial limit reached') || errorMessage.includes('Trial expired')) {
+        setFormError(errorMessage + '\n\nVisit gritsoftware.dev to purchase a license.');
+      } else {
+        setFormError('Error saving invoice: ' + errorMessage);
+      }
     }
   };
 
@@ -679,51 +684,13 @@ function InvoiceForm({ invoice, onClose }) {
         <form onSubmit={handleSubmit}>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              {formData.type === 'quote' ? 'Quote' : 'Invoice'} Details
+              Invoice Details
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type *
-                </label>
-                <div className="flex gap-4">
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      name="type"
-                      value="invoice"
-                      checked={formData.type === 'invoice'}
-                      onChange={async (e) => {
-                        const newType = e.target.value;
-                        const newNumber = await peekNextInvoiceNumber(newType);
-                        setFormData(prev => ({ ...prev, type: newType, invoice_number: newNumber }));
-                      }}
-                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm font-medium text-gray-700">Invoice</span>
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      name="type"
-                      value="quote"
-                      checked={formData.type === 'quote'}
-                      onChange={async (e) => {
-                        const newType = e.target.value;
-                        const newNumber = await peekNextInvoiceNumber(newType);
-                        setFormData(prev => ({ ...prev, type: newType, invoice_number: newNumber }));
-                      }}
-                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm font-medium text-gray-700">Quote</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {formData.type === 'quote' ? 'Quote' : 'Invoice'} Number *
+                  Invoice Number *
                 </label>
                 <input
                   type="text"
@@ -989,14 +956,64 @@ function InvoiceForm({ invoice, onClose }) {
                     className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-mono"
                     title="Enter item number and press Enter or Tab to auto-fill"
                   />
-                  <input
-                    type="text"
-                    placeholder="Description"
-                    value={item.description}
-                    onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                    required
-                  />
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      placeholder="Description (type to search saved items)"
+                      value={item.description}
+                      onChange={(e) => {
+                        handleItemChange(index, 'description', e.target.value);
+                        setActiveDescriptionIndex(e.target.value.length > 0 ? index : null);
+                      }}
+                      onFocus={() => {
+                        if (item.description.length > 0) setActiveDescriptionIndex(index);
+                      }}
+                      onBlur={() => {
+                        // Delay to allow click on dropdown item
+                        setTimeout(() => setActiveDescriptionIndex(null), 200);
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                      required
+                    />
+                    {activeDescriptionIndex === index && item.description.length > 0 && (() => {
+                      const query = item.description.toLowerCase();
+                      const matches = savedItems.filter(si =>
+                        si.description.toLowerCase().includes(query) ||
+                        (si.sku && si.sku.toLowerCase().includes(query)) ||
+                        (si.category && si.category.toLowerCase().includes(query))
+                      ).slice(0, 6);
+                      if (matches.length === 0) return null;
+                      // Don't show if current description exactly matches a saved item
+                      if (matches.length === 1 && matches[0].description === item.description) return null;
+                      return (
+                        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {matches.map((si) => (
+                            <button
+                              key={si.id}
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const newItems = [...items];
+                                newItems[index].item_number = si.sku || '';
+                                newItems[index].description = si.description;
+                                newItems[index].rate = si.rate;
+                                newItems[index].amount = calculateItemAmount({ ...newItems[index], rate: si.rate });
+                                setItems(newItems);
+                                setActiveDescriptionIndex(null);
+                              }}
+                              className="w-full text-left px-3 py-2 hover:bg-blue-50 flex justify-between items-center text-sm border-b border-gray-100 last:border-0"
+                            >
+                              <div>
+                                <div className="font-medium text-gray-900">{si.description}</div>
+                                {si.sku && <span className="text-xs text-gray-500">{si.sku}</span>}
+                              </div>
+                              <span className="text-gray-600 font-medium ml-2">${si.rate.toFixed(2)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
                   <input
                     type="number"
                     placeholder="Qty"

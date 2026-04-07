@@ -242,7 +242,8 @@ function CreditNotes() {
       handleCloseForm();
     } catch (error) {
       console.error('Error saving credit note:', error);
-      console.error('Error saving credit note: ' + error.message);
+      const errorMessage = error.message || 'Unknown error occurred';
+      console.error('Error saving credit note: ' + errorMessage);
     }
   };
 
