@@ -242,7 +242,12 @@ function CreditNotes() {
       handleCloseForm();
     } catch (error) {
       console.error('Error saving credit note:', error);
-      alert('Error saving credit note: ' + error.message);
+      const errorMessage = error.message || 'Unknown error occurred';
+      if (errorMessage.includes('Trial limit reached') || errorMessage.includes('Trial expired')) {
+        alert(errorMessage + '\n\nVisit gritsoftware.dev to purchase a license.');
+      } else {
+        alert('Error saving credit note: ' + errorMessage);
+      }
     }
   };
 

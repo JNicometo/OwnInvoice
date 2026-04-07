@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Printer, Download, Mail } from 'lucide-react';
+import { X, Printer, Download, Mail, Edit } from 'lucide-react';
 import { useDatabase } from '../hooks/useDatabase';
 import { formatCurrency, formatDate } from '../utils/formatting';
 
-function QuotePreview({ quote, onClose }) {
+function QuotePreview({ quote, onClose, onEdit }) {
   const [fullQuote, setFullQuote] = useState(null);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -422,16 +422,28 @@ function QuotePreview({ quote, onClose }) {
               <span class="t-label">Subtotal</span>
               <span class="t-val">${formatCurrency(fullQuote?.subtotal || 0)}</span>
             </div>
-            ${fullQuote?.discount ? `
+            ${fullQuote?.discount_amount ? `
             <div class="t-row">
-              <span class="t-label">Discount</span>
-              <span class="t-val">-${formatCurrency(fullQuote.discount)}</span>
+              <span class="t-label">Discount${fullQuote.discount_type === 'percentage' ? ` (${fullQuote.discount_value}%)` : ''}</span>
+              <span class="t-val">-${formatCurrency(fullQuote.discount_amount)}</span>
+            </div>
+            ` : ''}
+            ${fullQuote?.shipping ? `
+            <div class="t-row">
+              <span class="t-label">Shipping</span>
+              <span class="t-val">${formatCurrency(fullQuote.shipping)}</span>
             </div>
             ` : ''}
             <div class="t-row">
               <span class="t-label">Tax (${settings?.tax_rate || 0}%)</span>
               <span class="t-val">${formatCurrency(fullQuote?.tax || 0)}</span>
             </div>
+            ${fullQuote?.adjustment ? `
+            <div class="t-row">
+              <span class="t-label">${fullQuote.adjustment_label || 'Adjustment'}</span>
+              <span class="t-val">${fullQuote.adjustment > 0 ? '' : '-'}${formatCurrency(Math.abs(fullQuote.adjustment))}</span>
+            </div>
+            ` : ''}
             <hr class="t-line">
             <div class="t-total">
               <span class="t-label">Total</span>
@@ -573,6 +585,15 @@ function QuotePreview({ quote, onClose }) {
         <div className="flex justify-between items-center mb-6 print:hidden">
           <h1 className="text-3xl font-bold text-gray-900">Quote Preview</h1>
           <div className="flex space-x-3">
+            {onEdit && (
+              <button
+                onClick={() => onEdit(quote)}
+                className="flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </button>
+            )}
             <button
               onClick={handlePrint}
               className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
@@ -731,16 +752,28 @@ function QuotePreview({ quote, onClose }) {
                 <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Subtotal</span>
                 <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullQuote.subtotal)}</span>
               </div>
-              {fullQuote.discount > 0 && (
+              {fullQuote.discount_amount > 0 && (
                 <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
-                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Discount</span>
-                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>-{formatCurrency(fullQuote.discount)}</span>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Discount{fullQuote.discount_type === 'percentage' ? ` (${fullQuote.discount_value}%)` : ''}</span>
+                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>-{formatCurrency(fullQuote.discount_amount)}</span>
+                </div>
+              )}
+              {fullQuote.shipping > 0 && (
+                <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Shipping</span>
+                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullQuote.shipping)}</span>
                 </div>
               )}
               <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
                 <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Tax ({settings?.tax_rate || 0}%)</span>
                 <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullQuote.tax)}</span>
               </div>
+              {fullQuote.adjustment !== 0 && fullQuote.adjustment != null && (
+                <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>{fullQuote.adjustment_label || 'Adjustment'}</span>
+                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{fullQuote.adjustment > 0 ? '' : '-'}{formatCurrency(Math.abs(fullQuote.adjustment))}</span>
+                </div>
+              )}
               <hr style={{ border: 'none', height: '1px', background: '#e2e8f0', margin: '4px 0' }} />
               <div className="flex justify-between items-baseline" style={{ paddingTop: '10px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: settings?.invoice_header_color || '#0f172a' }}>Total</span>

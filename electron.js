@@ -12,6 +12,8 @@ const Store = require('electron-store');
 const os = require('os');
 const crypto = require('crypto');
 
+const jwt = require('jsonwebtoken');
+
 // License activation store (persists in OS app data directory)
 const licenseStore = new Store({
   name: 'license',
@@ -22,11 +24,163 @@ const licenseStore = new Store({
     activated: false,
     activatedAt: null,
     email: null,
+    licenseToken: null,
+    lastServerCheck: null,
+    trialStartDate: null,
   },
 });
 
-// Activation server URL — update this to your Netlify domain
+// Activation server URL
 const ACTIVATION_SERVER = 'https://gritsoftware.dev';
+
+// JWT public key for verifying license tokens from server
+// TODO: Replace with your actual public key from the server
+const LICENSE_PUBLIC_KEY = process.env.LICENSE_PUBLIC_KEY || 'owninvoice-jwt-secret-v1';
+
+// Trial limits — enforced at the main process level
+const TRIAL_LIMITS = {
+  invoices: 5,
+  quotes: 5,
+  clients: 5,
+  savedItems: 5,
+  recurringInvoices: 5,
+  creditNotes: 5,
+};
+
+// Trial duration in milliseconds (7 days)
+const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Cache expiry for license server checks (7 days in ms)
+const LICENSE_CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Check if the license is currently active.
+ * Returns true if: valid JWT token exists AND cache hasn't expired.
+ * Falls back to trial mode if cache is stale and can't reach server.
+ */
+function isLicenseActive() {
+  const data = licenseStore.store;
+
+  if (!data.activated || !data.licenseKey) {
+    return false;
+  }
+
+  // Check if we have a JWT token and verify it
+  if (data.licenseToken) {
+    try {
+      const decoded = jwt.verify(data.licenseToken, LICENSE_PUBLIC_KEY);
+      if (decoded.status === 'revoked') {
+        return false;
+      }
+    } catch (err) {
+      // Token invalid or expired — check if cache is still within grace period
+    }
+  }
+
+  // Check cache expiry — if last server check is too old, fall back to trial
+  if (data.lastServerCheck) {
+    const elapsed = Date.now() - new Date(data.lastServerCheck).getTime();
+    if (elapsed > LICENSE_CACHE_EXPIRY_MS) {
+      return false;
+    }
+  }
+
+  return data.activated === true;
+}
+
+/**
+ * Check if the 7-day trial period has expired.
+ * Returns true if trial start date is more than 7 days ago.
+ */
+function isTrialExpired() {
+  const trialStartDate = licenseStore.get('trialStartDate');
+  if (!trialStartDate) return false; // Not yet initialized
+  return Date.now() - trialStartDate > TRIAL_DURATION_MS;
+}
+
+/**
+ * Get the number of trial days remaining (0 if expired).
+ */
+function getTrialDaysRemaining() {
+  const trialStartDate = licenseStore.get('trialStartDate');
+  if (!trialStartDate) return 7;
+  const elapsed = Date.now() - trialStartDate;
+  const remaining = Math.ceil((TRIAL_DURATION_MS - elapsed) / (24 * 60 * 60 * 1000));
+  return Math.max(0, remaining);
+}
+
+/**
+ * Enforce trial limits for a given resource type.
+ * First checks trial expiry (7-day limit), then count limits.
+ * Throws an error with code TRIAL_EXPIRED or TRIAL_LIMIT_REACHED.
+ */
+function enforceTrialLimit(resourceType) {
+  if (isLicenseActive()) return; // Licensed — no limits
+
+  // Check trial expiry first
+  if (isTrialExpired()) {
+    const error = new Error(
+      'Your 7-day trial has expired. Activate a license to continue.'
+    );
+    error.code = 'TRIAL_EXPIRED';
+    throw error;
+  }
+
+  const counts = db.getTrialCounts();
+  const limit = TRIAL_LIMITS[resourceType];
+
+  if (limit !== undefined && counts[resourceType] >= limit) {
+    const error = new Error(
+      `Trial limit reached: You can only create ${limit} ${resourceType} in trial mode. ` +
+      `Activate a license to unlock unlimited ${resourceType}.`
+    );
+    error.code = 'TRIAL_LIMIT_REACHED';
+    error.resourceType = resourceType;
+    error.currentCount = counts[resourceType];
+    error.limit = limit;
+    throw error;
+  }
+}
+
+/**
+ * Phone home to validate license on startup.
+ * Updates cache timestamp. If server says revoked, deactivates locally.
+ */
+async function validateLicenseOnStartup() {
+  const data = licenseStore.store;
+  if (!data.activated || !data.licenseKey) return;
+
+  try {
+    const machineId = generateMachineId();
+    const response = await fetch(`${ACTIVATION_SERVER}/api/check-license`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenseKey: data.licenseKey, machineId }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+
+      if (result.valid && result.token) {
+        // Store fresh JWT token and update cache timestamp
+        licenseStore.set('licenseToken', result.token);
+        licenseStore.set('lastServerCheck', new Date().toISOString());
+      } else if (result.revoked) {
+        // License was revoked server-side
+        licenseStore.set('activated', false);
+        licenseStore.set('licenseToken', null);
+        licenseStore.set('lastServerCheck', new Date().toISOString());
+        console.log('License revoked by server');
+      } else {
+        // Server responded but license not valid — update timestamp anyway
+        licenseStore.set('lastServerCheck', new Date().toISOString());
+      }
+    }
+    // If network error, silently fail — use cached status
+  } catch (err) {
+    console.log('License validation network error (using cached status):', err.message);
+  }
+}
 
 /**
  * Generate a deterministic machine ID from hardware identifiers.
@@ -146,6 +300,13 @@ app.whenReady().then(async () => {
     await db.initDatabase();
     console.log('Database initialized successfully');
 
+    // Initialize trial start date on first launch
+    if (licenseStore.get('trialStartDate') === null) {
+      licenseStore.set('trialStartDate', Date.now());
+      console.log('Trial start date initialized');
+    }
+
+
     // Create window after database is ready
     createWindow();
 
@@ -175,16 +336,6 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
-  }
-});
-
-// Auto-kill dev server on quit
-app.on('before-quit', () => {
-  if (isDev) {
-    try {
-      require('child_process').execSync('lsof -ti:3000 | xargs kill -9', { stdio: 'ignore' });
-      console.log('Dev server killed on quit');
-    } catch (e) {}
   }
 });
 
@@ -264,6 +415,7 @@ ipcMain.handle('db:getClientByCustomerNumber', async (event, customerNumber) => 
 
 ipcMain.handle('db:createClient', async (event, client) => {
   try {
+    enforceTrialLimit('clients');
     validateObject(client, 'Client data');
     validateNonEmpty(client.name, 'Client name');
     validateNonEmpty(client.email, 'Client email');
@@ -457,6 +609,7 @@ ipcMain.handle('db:getInvoice', async (event, id) => {
 
 ipcMain.handle('db:createInvoice', async (event, invoice, items) => {
   try {
+    enforceTrialLimit('invoices');
     if (useSqlServer()) {
       const adapter = getDbAdapter();
       const result = await adapter.createInvoice(invoice);
@@ -609,6 +762,7 @@ ipcMain.handle('db:getSavedItemBySku', async (event, sku) => {
 
 ipcMain.handle('db:createSavedItem', async (event, item) => {
   try {
+    enforceTrialLimit('savedItems');
     if (useSqlServer()) {
       const adapter = getDbAdapter();
       return await adapter.createSavedItem(item);
@@ -1015,6 +1169,7 @@ ipcMain.handle('db:deletePayment', async (event, id) => {
 // Recurring Invoices
 ipcMain.handle('db:createRecurringInvoice', async (event, recurringInvoice, items) => {
   try {
+    enforceTrialLimit('recurringInvoices');
     return db.createRecurringInvoice(recurringInvoice, items);
   } catch (error) {
     console.error('Error creating recurring invoice:', error);
@@ -1060,6 +1215,7 @@ ipcMain.handle('db:deleteRecurringInvoice', async (event, id) => {
 
 ipcMain.handle('db:generateInvoiceFromRecurring', async (event, recurringInvoiceId) => {
   try {
+    enforceTrialLimit('invoices');
     return db.generateInvoiceFromRecurring(recurringInvoiceId);
   } catch (error) {
     console.error('Error generating invoice from recurring:', error);
@@ -1090,6 +1246,7 @@ ipcMain.handle('db:peekNextQuoteNumber', async () => {
 
 ipcMain.handle('db:createQuote', async (event, quote, items) => {
   try {
+    enforceTrialLimit('quotes');
     if (useSqlServer()) {
       const adapter = getDbAdapter();
       const result = await adapter.createQuote(quote);
@@ -1218,6 +1375,7 @@ ipcMain.handle('db:generateCreditNoteNumber', async () => {
 
 ipcMain.handle('db:createCreditNote', async (event, creditNote, items) => {
   try {
+    enforceTrialLimit('creditNotes');
     if (useSqlServer()) {
       const adapter = getDbAdapter();
       return await adapter.createCreditNote(creditNote);
@@ -2358,14 +2516,20 @@ ipcMain.handle('email:sendInvoiceWithPayment', async (event, emailData) => {
 // License Activation IPC Handlers
 // ========================================
 
-// Check local license status (no network — reads from electron-store)
+// Check local license status + phone home on startup if online
 ipcMain.handle('license:check', async () => {
+  // Phone home to validate (runs async, updates cache)
+  await validateLicenseOnStartup();
+
   const data = licenseStore.store;
+  const active = isLicenseActive();
+
   return {
     licenseKey: data.licenseKey,
-    activated: data.activated,
+    activated: active,
     activatedAt: data.activatedAt,
     email: data.email,
+    lastServerCheck: data.lastServerCheck,
   };
 });
 
@@ -2393,6 +2557,8 @@ ipcMain.handle('license:activate', async (event, licenseKey) => {
       licenseStore.set('activated', true);
       licenseStore.set('activatedAt', new Date().toISOString());
       licenseStore.set('email', data.email || null);
+      licenseStore.set('licenseToken', data.token || null);
+      licenseStore.set('lastServerCheck', new Date().toISOString());
 
       return { success: true, message: data.message };
     }
@@ -2415,8 +2581,45 @@ ipcMain.handle('license:activate', async (event, licenseKey) => {
 
 // Deactivate license (for support/debugging)
 ipcMain.handle('license:deactivate', async () => {
+  // Preserve trialStartDate so trial doesn't reset on deactivation
+  const trialStartDate = licenseStore.get('trialStartDate');
   licenseStore.clear();
+  if (trialStartDate) {
+    licenseStore.set('trialStartDate', trialStartDate);
+  }
   return { success: true };
+});
+
+// Get trial status with counts and limits
+ipcMain.handle('license:getTrialStatus', async () => {
+  const counts = db.getTrialCounts();
+  const active = isLicenseActive();
+
+  return {
+    isLicensed: active,
+    limits: TRIAL_LIMITS,
+    counts,
+    remaining: {
+      invoices: Math.max(0, TRIAL_LIMITS.invoices - counts.invoices),
+      quotes: Math.max(0, TRIAL_LIMITS.quotes - counts.quotes),
+      clients: Math.max(0, TRIAL_LIMITS.clients - counts.clients),
+      savedItems: Math.max(0, TRIAL_LIMITS.savedItems - counts.savedItems),
+      recurringInvoices: Math.max(0, TRIAL_LIMITS.recurringInvoices - counts.recurringInvoices),
+      creditNotes: Math.max(0, TRIAL_LIMITS.creditNotes - counts.creditNotes),
+    },
+    trialStartDate: licenseStore.get('trialStartDate'),
+    trialDaysRemaining: getTrialDaysRemaining(),
+    trialExpired: isTrialExpired(),
+  };
+});
+
+// Force a server validation check
+ipcMain.handle('license:serverCheck', async () => {
+  await validateLicenseOnStartup();
+  return {
+    activated: isLicenseActive(),
+    lastServerCheck: licenseStore.get('lastServerCheck'),
+  };
 });
 
 // ========================================
@@ -2870,8 +3073,22 @@ async function checkAndGenerateRecurringInvoices() {
 
     console.log(`Found ${dueRecurring.length} recurring invoice(s) due for generation`);
 
+    // Skip auto-generation if trial expired or invoice limit reached
+    if (!isLicenseActive() && isTrialExpired()) {
+      console.log('Trial expired — skipping automatic recurring invoice generation');
+      return;
+    }
+
     for (const recurring of dueRecurring) {
       try {
+        // Check invoice count limit before each generation
+        if (!isLicenseActive()) {
+          const counts = db.getTrialCounts();
+          if (counts.invoices >= TRIAL_LIMITS.invoices) {
+            console.log('Trial invoice limit reached — skipping remaining recurring invoice generation');
+            break;
+          }
+        }
         const result = db.generateInvoiceFromRecurring(recurring.id);
         if (result) {
           console.log(`Generated invoice from recurring template "${recurring.template_name || recurring.id}" for ${recurring.client_name}`);
@@ -3036,6 +3253,11 @@ cron.schedule('* * * * *', runScheduledBackup);
 // IPC handler to manually trigger reminder check
 ipcMain.handle('reminders:checkAndSend', async () => {
   try {
+    if (!isLicenseActive() && isTrialExpired()) {
+      const error = new Error('Your 7-day trial has expired. Activate a license to continue.');
+      error.code = 'TRIAL_EXPIRED';
+      throw error;
+    }
     await checkAndSendReminders();
     return { success: true, message: 'Reminder check completed' };
   } catch (error) {

@@ -10,7 +10,6 @@ import QuoteForm from './QuoteForm';
 import CSVImport from './CSVImport';
 
 function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
-  const [invoices, setInvoices] = useState([]);
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,8 +29,9 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
   const ITEMS_PER_PAGE = 10;
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('DESC');
-  const [viewType, setViewType] = useState('invoices');
+  const [viewType, setViewType] = useState('all');
   const [showCSVImport, setShowCSVImport] = useState(false);
+  const [showQuoteForm, setShowQuoteForm] = useState(false);
 
   // Update status filter when prop changes
   useEffect(() => {
@@ -59,37 +59,54 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
     try {
       setLoading(true);
 
-      if (viewType === 'invoices') {
+      const filterOpts = {
+        search: searchTerm,
+        status: statusFilter === 'all' ? '' : statusFilter,
+        clientId: selectedClientId || clientFilter || null,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        sortBy: sortBy,
+        sortOrder: sortOrder
+      };
+
+      if (viewType === 'all') {
+        // Fetch both invoices and quotes, merge and sort
+        const [invoiceResult, quoteResult] = await Promise.all([
+          getPaginatedInvoices({ page: 1, limit: 1000, ...filterOpts }),
+          getPaginatedQuotes(1, 1000, filterOpts)
+        ]);
+
+        const allInvoices = (invoiceResult.invoices || []).map(inv => ({ ...inv, _viewType: 'invoice' }));
+        const allQuotes = (quoteResult.quotes || []).map(q => ({
+          ...q,
+          invoice_number: q.quote_number || q.invoice_number,
+          _viewType: 'quote'
+        }));
+
+        const combined = [...allInvoices, ...allQuotes];
+        // Sort by date descending
+        combined.sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+
+        const total = combined.length;
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        const paged = combined.slice(start, start + ITEMS_PER_PAGE);
+
+        setFilteredInvoices(paged);
+        setTotalInvoices(total);
+        setTotalPages(Math.ceil(total / ITEMS_PER_PAGE) || 1);
+      } else if (viewType === 'invoices') {
         const result = await getPaginatedInvoices({
           page: currentPage,
           limit: ITEMS_PER_PAGE,
-          search: searchTerm,
-          status: statusFilter === 'all' ? '' : statusFilter,
-          clientId: selectedClientId || clientFilter || null,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          sortBy: sortBy,
-          sortOrder: sortOrder
+          ...filterOpts
         });
 
-        setInvoices(result.invoices);
         setFilteredInvoices(result.invoices);
         setTotalPages(result.totalPages);
         setTotalInvoices(result.total);
       } else {
-        // Quotes come ONLY from the quotes table - completely separate from invoices
-        const filters = {
-          search: searchTerm,
-          status: statusFilter === 'all' ? '' : statusFilter,
-          clientId: selectedClientId || clientFilter || null,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          sortBy: sortBy,
-          sortOrder: sortOrder
-        };
-        const result = await getPaginatedQuotes(currentPage, ITEMS_PER_PAGE, filters);
+        const result = await getPaginatedQuotes(currentPage, ITEMS_PER_PAGE, filterOpts);
 
-        setInvoices(result.quotes);
         setFilteredInvoices(result.quotes);
         setTotalInvoices(result.total);
         setTotalPages(result.totalPages || Math.ceil(result.total / ITEMS_PER_PAGE) || 1);
@@ -149,11 +166,15 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
 
   const hasActiveFilters = searchTerm || statusFilter !== 'all' || dateFrom || dateTo || clientFilter || selectedClientId;
 
-  const handleDelete = async (id) => {
-    const label = viewType === 'invoices' ? 'invoice' : 'quote';
+  const isQuoteItem = (item) => {
+    return viewType === 'quotes' || (viewType === 'all' && item?._viewType === 'quote');
+  };
+
+  const handleDelete = async (id, item) => {
+    const label = isQuoteItem(item) ? 'quote' : 'invoice';
     if (window.confirm(`Are you sure you want to delete this ${label}?`)) {
       try {
-        if (viewType === 'quotes') {
+        if (isQuoteItem(item)) {
           await deleteQuote(id);
         } else {
           await deleteInvoice(id);
@@ -165,11 +186,11 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
     }
   };
 
-  const handleArchive = async (id) => {
-    const label = viewType === 'invoices' ? 'invoice' : 'quote';
+  const handleArchive = async (id, item) => {
+    const label = isQuoteItem(item) ? 'quote' : 'invoice';
     if (window.confirm(`Archive this ${label}?`)) {
       try {
-        if (viewType === 'quotes') {
+        if (isQuoteItem(item)) {
           await archiveQuote(id);
         } else {
           await archiveInvoice(id);
@@ -183,7 +204,11 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
 
   const handleEdit = (invoice) => {
     setSelectedInvoice(invoice);
-    setShowForm(true);
+    if (isQuoteItem(invoice)) {
+      setShowQuoteForm(true);
+    } else {
+      setShowForm(true);
+    }
   };
 
   const handleView = (invoice) => {
@@ -273,18 +298,23 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
     }
   };
 
+  if (showQuoteForm) {
+    return <QuoteForm quote={selectedInvoice} onClose={() => { setShowQuoteForm(false); setSelectedInvoice(null); loadInvoices(); }} />;
+  }
+
   if (showForm) {
-    if (viewType === 'quotes') {
-      return <QuoteForm quote={selectedInvoice} onClose={handleFormClose} />;
-    }
     return <InvoiceForm invoice={selectedInvoice} onClose={handleFormClose} />;
   }
 
   if (showPreview) {
-    if (viewType === 'quotes') {
-      return <QuotePreview quote={selectedInvoice} onClose={handlePreviewClose} />;
+    const handlePreviewEdit = (item) => {
+      setShowPreview(false);
+      handleEdit(item);
+    };
+    if (isQuoteItem(selectedInvoice)) {
+      return <QuotePreview quote={selectedInvoice} onClose={handlePreviewClose} onEdit={handlePreviewEdit} />;
     }
-    return <InvoicePreview invoice={selectedInvoice} onClose={handlePreviewClose} />;
+    return <InvoicePreview invoice={selectedInvoice} onClose={handlePreviewClose} onEdit={handlePreviewEdit} />;
   }
 
   return (
@@ -293,14 +323,14 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              {viewType === 'invoices' ? 'Invoices' : 'Quotes'}
+              {viewType === 'all' ? 'Invoices & Quotes' : viewType === 'invoices' ? 'Invoices' : 'Quotes'}
             </h1>
             <p className="text-gray-500 mt-1">
-              Manage all your {viewType === 'invoices' ? 'invoices' : 'quotes'}
+              Manage all your {viewType === 'all' ? 'invoices and quotes' : viewType === 'invoices' ? 'invoices' : 'quotes'}
             </p>
           </div>
           <div className="flex gap-2">
-            {viewType === 'invoices' && (
+            {(viewType === 'invoices' || viewType === 'all') && (
               <button
                 onClick={() => setShowCSVImport(true)}
                 className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -310,17 +340,35 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
               </button>
             )}
             <button
-              onClick={() => setShowForm(true)}
+              onClick={() => { setSelectedInvoice(null); setShowQuoteForm(true); }}
+              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              <FilePen className="w-5 h-5 mr-2" />
+              New Quote
+            </button>
+            <button
+              onClick={() => { setSelectedInvoice(null); setShowForm(true); }}
               className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <Plus className="w-5 h-5 mr-2" />
-              {viewType === 'invoices' ? 'New Invoice' : 'New Quote'}
+              New Invoice
             </button>
           </div>
         </div>
 
         {/* View Type Toggle */}
         <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setViewType('all')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              viewType === 'all'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            <FileText className="w-4 h-4 inline mr-1.5" />
+            All
+          </button>
           <button
             onClick={() => setViewType('invoices')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -439,7 +487,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder={viewType === 'invoices' ? 'Search invoices...' : 'Search quotes...'}
+              placeholder={viewType === 'all' ? 'Search all...' : viewType === 'invoices' ? 'Search invoices...' : 'Search quotes...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -505,7 +553,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
 
         {/* Results Summary */}
         <div className="mt-4 text-sm text-gray-600">
-          Showing <strong>{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalInvoices)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalInvoices)}</strong> of <strong>{totalInvoices}</strong> {viewType === 'invoices' ? 'invoices' : 'quotes'}
+          Showing <strong>{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalInvoices)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalInvoices)}</strong> of <strong>{totalInvoices}</strong> {viewType === 'all' ? 'items' : viewType === 'invoices' ? 'invoices' : 'quotes'}
         </div>
       </div>
 
@@ -514,11 +562,11 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
         <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
           <div className="flex items-center">
             <span className="text-sm font-medium text-blue-900">
-              {selectedInvoices.length} {viewType === 'invoices' ? 'invoice' : 'quote'}{selectedInvoices.length > 1 ? 's' : ''} selected
+              {selectedInvoices.length} item{selectedInvoices.length > 1 ? 's' : ''} selected
             </span>
           </div>
           <div className="flex space-x-2">
-            {viewType === 'invoices' && (
+            {viewType !== 'quotes' && (
               <button
                 onClick={handleBulkMarkPaid}
                 className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center"
@@ -555,17 +603,17 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">Loading {viewType === 'invoices' ? 'invoices' : 'quotes'}...</p>
+            <p className="text-gray-500">Loading...</p>
           </div>
         ) : filteredInvoices.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No {viewType === 'invoices' ? 'invoices' : 'quotes'} found</p>
+            <p className="text-gray-500">No {viewType === 'all' ? 'invoices or quotes' : viewType === 'invoices' ? 'invoices' : 'quotes'} found</p>
             <button
               onClick={() => setShowForm(true)}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Create Your First {viewType === 'invoices' ? 'Invoice' : 'Quote'}
+              Create Your First Invoice
             </button>
           </div>
         ) : (
@@ -580,8 +628,13 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                     className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                   />
                 </th>
+                {viewType === 'all' && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {viewType === 'invoices' ? 'Invoice #' : 'Quote #'}
+                  {viewType === 'quotes' ? 'Quote #' : viewType === 'all' ? '#' : 'Invoice #'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Client
@@ -590,12 +643,12 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                   Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {viewType === 'invoices' ? 'Due Date' : 'Expiry Date'}
+                  {viewType === 'quotes' ? 'Expiry Date' : 'Due Date'}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
                 </th>
-                {viewType === 'invoices' && (
+                {viewType !== 'quotes' && (
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Balance
                   </th>
@@ -619,8 +672,17 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                       className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                     />
                   </td>
+                  {viewType === 'all' && (
+                    <td className="px-6 py-4 whitespace-nowrap text-xs">
+                      <span className={`inline-flex px-2 py-1 font-semibold rounded-full ${
+                        isQuoteItem(invoice) ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {isQuoteItem(invoice) ? 'Quote' : 'Invoice'}
+                      </span>
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {viewType === 'invoices' ? invoice.invoice_number : (invoice.quote_number || invoice.invoice_number)}
+                    {isQuoteItem(invoice) ? (invoice.quote_number || invoice.invoice_number) : invoice.invoice_number}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {invoice.client_name}
@@ -629,14 +691,16 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                     {formatDate(invoice.date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(viewType === 'invoices' ? invoice.due_date : invoice.expiry_date)}
+                    {formatDate(isQuoteItem(invoice) ? invoice.expiry_date : invoice.due_date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {formatCurrency(invoice.total)}
                   </td>
-                  {viewType === 'invoices' && (
+                  {viewType !== 'quotes' && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {(() => {
+                      {isQuoteItem(invoice) ? (
+                        <span className="text-gray-400">—</span>
+                      ) : (() => {
                         const balance = invoice.total - (invoice.amount_paid || 0) - (invoice.credits_applied || 0);
                         const isFullyPaid = balance <= 0;
                         return (
@@ -668,7 +732,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      {(invoice.type === 'quote' || (viewType === 'quotes' && !invoice.converted_to_invoice_id)) && (
+                      {(isQuoteItem(invoice) && !invoice.converted_to_invoice_id) && (
                         <button
                           onClick={() => handleConvertToInvoice(invoice.id)}
                           className="text-green-600 hover:text-green-900"
@@ -678,14 +742,14 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                         </button>
                       )}
                       <button
-                        onClick={() => handleArchive(invoice.id)}
+                        onClick={() => handleArchive(invoice.id, invoice)}
                         className="text-yellow-600 hover:text-yellow-900"
                         title="Archive"
                       >
                         <Archive className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(invoice.id)}
+                        onClick={() => handleDelete(invoice.id, invoice)}
                         className="text-red-600 hover:text-red-900"
                         title="Delete"
                       >
@@ -703,7 +767,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
         {totalInvoices > 0 && (
           <div className="flex justify-between items-center mt-4 px-4 py-3 border-t">
             <div className="text-sm text-gray-600">
-              Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalInvoices)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalInvoices)} of {totalInvoices} {viewType === 'invoices' ? 'invoices' : 'quotes'}
+              Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalInvoices)}-{Math.min(currentPage * ITEMS_PER_PAGE, totalInvoices)} of {totalInvoices} {viewType === 'all' ? 'items' : viewType === 'invoices' ? 'invoices' : 'quotes'}
             </div>
 
             <div className="flex gap-2 items-center">

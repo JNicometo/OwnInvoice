@@ -196,7 +196,12 @@ function SavedItems() {
       handleCloseForm();
     } catch (error) {
       console.error('Error saving item:', error);
-      alert('Error saving item: ' + error.message);
+      const errorMessage = error.message || 'Unknown error occurred';
+      if (errorMessage.includes('Trial limit reached') || errorMessage.includes('Trial expired')) {
+        alert(errorMessage + '\n\nVisit gritsoftware.dev to purchase a license.');
+      } else {
+        alert('Error saving item: ' + errorMessage);
+      }
     }
   };
 

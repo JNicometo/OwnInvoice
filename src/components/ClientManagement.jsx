@@ -304,7 +304,12 @@ function ClientManagement({ onNavigateToInvoices }) {
       handleCloseModal();
     } catch (error) {
       console.error('Error saving client:', error);
-      alert('Error saving client: ' + error.message);
+      const errorMessage = error.message || 'Unknown error occurred';
+      if (errorMessage.includes('Trial limit reached') || errorMessage.includes('Trial expired')) {
+        alert(errorMessage + '\n\nVisit gritsoftware.dev to purchase a license.');
+      } else {
+        alert('Error saving client: ' + errorMessage);
+      }
     }
   };
 
