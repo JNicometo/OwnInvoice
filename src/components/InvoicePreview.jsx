@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { X, Printer, Download, Mail, DollarSign, CreditCard, Trash2, Edit } from 'lucide-react';
 import { useDatabase } from '../hooks/useDatabase';
 import { formatCurrency, formatDate } from '../utils/formatting';
@@ -1259,8 +1260,8 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
           </div>
         )}
 
-        {/* Payment Modal */}
-        {showPaymentModal && (
+        {/* Payment Modal - Portal to document.body */}
+        {showPaymentModal && ReactDOM.createPortal(
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-lg w-full">
               <div className="p-6">
@@ -1392,11 +1393,12 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
-        {/* Email Modal */}
-        {showEmailModal && (
+        {/* Email Modal - Portal to document.body to avoid overflow stacking issues on Windows */}
+        {showEmailModal && ReactDOM.createPortal(
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6">
@@ -1516,11 +1518,12 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
-        {/* Card Payment Modal */}
-        {showCardPaymentModal && (
+        {/* Card Payment Modal - Portal to document.body */}
+        {showCardPaymentModal && ReactDOM.createPortal(
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
               <div className="p-6">
@@ -1675,7 +1678,8 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Invoice Document - On-screen preview matching PDF design */}
