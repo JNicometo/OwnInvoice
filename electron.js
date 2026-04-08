@@ -952,6 +952,9 @@ ipcMain.handle('email:sendInvoice', async (event, emailData) => {
       }
     });
 
+    // Normalize literal \n sequences to real newlines (in case template was saved with escaped newlines)
+    const normalizedBody = body.replace(/\\n/g, '\n');
+
     // Prepare email options
     const mailOptions = {
       from: settings.smtp_from_email
@@ -959,8 +962,8 @@ ipcMain.handle('email:sendInvoice', async (event, emailData) => {
         : settings.smtp_user,
       to: recipient,
       subject: subject,
-      text: body, // Plain text body
-      html: `<pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${body}</pre>`, // HTML body
+      text: normalizedBody,
+      html: `<pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${normalizedBody}</pre>`,
       attachments: [
         {
           filename: `Invoice-${invoiceNumber}.pdf`,
@@ -1072,6 +1075,9 @@ ipcMain.handle('email:sendQuote', async (event, emailData) => {
       }
     });
 
+    // Normalize literal \n sequences to real newlines
+    const normalizedBody = body.replace(/\\n/g, '\n');
+
     // Prepare email options
     const mailOptions = {
       from: settings.smtp_from_email
@@ -1079,8 +1085,8 @@ ipcMain.handle('email:sendQuote', async (event, emailData) => {
         : settings.smtp_user,
       to: recipient,
       subject: subject,
-      text: body,
-      html: `<pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${body}</pre>`,
+      text: normalizedBody,
+      html: `<pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${normalizedBody}</pre>`,
       attachments: [
         {
           filename: `Quote-${quoteNumber}.pdf`,

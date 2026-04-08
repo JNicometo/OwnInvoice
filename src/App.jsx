@@ -25,6 +25,7 @@ function App() {
   const [isSearching, setIsSearching] = useState(false);
   const [navigation, setNavigation] = useState([]);
   const [isLicensed, setIsLicensed] = useState(null); // null=checking, false=show activation, true=show app
+  const [trialStatus, setTrialStatus] = useState(null);
   const [appError, setAppError] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', resolve: null });
   const searchInputRef = useRef(null);

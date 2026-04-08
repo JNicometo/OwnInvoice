@@ -17,6 +17,8 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
     bcc: ''
   });
   const [sending, setSending] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [emailSuccess, setEmailSuccess] = useState('');
   const [payments, setPayments] = useState([]);
   const [totalPaid, setTotalPaid] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -549,7 +551,7 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
 
   const handleDownload = async () => {
     try {
-      const invoiceHtml = generateInvoiceHTML();
+      const invoiceHtml = await generateInvoiceHTML();
       const result = await saveInvoiceAsPDF(invoiceHtml, fullInvoice.invoice_number);
 
       if (result.success) {
@@ -586,29 +588,34 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
       bcc: settings?.email_bcc || ''
     });
 
+    setEmailError('');
+    setEmailSuccess('');
     setShowEmailModal(true);
   };
 
   const handleSendEmail = async () => {
+    setEmailError('');
+    setEmailSuccess('');
+
     // Validate
     if (!emailData.recipient || !emailData.recipient.trim()) {
-      console.error('Please enter a recipient email address');
+      setEmailError('Please enter a recipient email address.');
       return;
     }
 
     if (!settings?.smtp_host || !settings?.smtp_user || !settings?.smtp_password) {
-      console.error('Email settings are not configured. Please configure SMTP settings in Settings > Email Templates.');
+      setEmailError('Email settings are not configured. Please go to Settings > Email Templates and set up your SMTP details.');
       return;
     }
 
     if (!fullInvoice || !fullInvoice.items || fullInvoice.items.length === 0) {
-      console.error('Invoice data is not fully loaded. Please wait a moment and try again.');
+      setEmailError('Invoice data is not fully loaded. Please close and reopen the invoice.');
       return;
     }
 
     try {
       setSending(true);
-      const invoiceHtml = generateInvoiceHTML();
+      const invoiceHtml = await generateInvoiceHTML();
 
       const result = await sendInvoiceEmail({
         settings,
@@ -622,12 +629,11 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
       });
 
       if (result.success) {
-        console.error(result.message || 'Invoice email sent successfully!');
-        setShowEmailModal(false);
+        setEmailSuccess(result.message || 'Invoice sent successfully!');
+        setTimeout(() => setShowEmailModal(false), 1500);
       }
     } catch (error) {
-      console.error('Error sending email:', error);
-      console.error('Error sending email: ' + error.message);
+      setEmailError(error.message || 'Failed to send email. Please check your settings and try again.');
     } finally {
       setSending(false);
     }
@@ -1486,6 +1492,17 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
                     </p>
                   </div>
                 </div>
+
+                {emailError && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">{emailError}</p>
+                  </div>
+                )}
+                {emailSuccess && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-700">{emailSuccess}</p>
+                  </div>
+                )}
 
                 <div className="flex justify-end space-x-3 mt-6">
                   <button
