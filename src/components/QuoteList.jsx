@@ -241,18 +241,18 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-6">
+    <div className="p-4 lg:p-6 xl:p-8">
+      <div className="mb-4 lg:mb-6">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-4 lg:mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Quotes</h1>
-            <p className="text-gray-500 mt-1">Manage all your quotes</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Quotes</h1>
+            <p className="text-gray-500 mt-1 text-sm lg:text-base">Manage all your quotes</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center px-3 lg:px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
           >
-            <Plus className="w-5 h-5 mr-2" />
+            <Plus className="w-4 h-4 lg:w-5 lg:h-5 mr-1.5 lg:mr-2" />
             New Quote
           </button>
         </div>
@@ -451,7 +451,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
       )}
 
       {/* Quotes Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
         {loading ? (
           <div className="text-center py-12">
             <p className="text-gray-500">Loading quotes...</p>
@@ -468,10 +468,10 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
             </button>
           </div>
         ) : (
-          <table className="w-full">
+          <table className="w-full" style={{ minWidth: '700px' }}>
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left">
+                <th className="px-3 lg:px-4 py-3 text-left">
                   <input
                     type="checkbox"
                     checked={selectedQuotes.length === filteredQuotes.length && filteredQuotes.length > 0}
@@ -479,25 +479,25 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
                     className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Quote #
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Client
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Valid Until
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -505,7 +505,7 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
             <tbody className="divide-y divide-gray-200">
               {filteredQuotes.map((quote) => (
                 <tr key={quote.id} className={`hover:bg-gray-50 ${selectedQuotes.includes(quote.id) ? 'bg-blue-50' : ''}`}>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
                       checked={selectedQuotes.includes(quote.id)}
@@ -513,22 +513,22 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
                       className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                     />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {quote.quote_number}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm text-gray-900 max-w-[150px] truncate">
                     {quote.client_name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(quote.date)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(quote.expiry_date)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {formatCurrency(quote.total)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(quote.status)}`}>
                         {quote.status}
@@ -541,18 +541,18 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end space-x-1.5">
                       <button
                         onClick={() => handleView(quote)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded"
                         title="View"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleEdit(quote)}
-                        className="text-gray-600 hover:text-gray-900"
+                        className="text-gray-600 hover:text-gray-900 p-1 hover:bg-gray-100 rounded"
                         title="Edit"
                       >
                         <Edit className="w-4 h-4" />
@@ -560,21 +560,21 @@ function QuoteList({ selectedClientId, selectedStatusFilter, onClearFilter }) {
                       <button
                         onClick={() => handleConvertToInvoice(quote.id)}
                         disabled={quote.status === 'accepted' || quote.converted_to_invoice_id}
-                        className="flex items-center gap-1 px-3 py-1 text-sm text-green-600 hover:bg-green-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center text-green-600 hover:bg-green-50 p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                         title={quote.converted_to_invoice_id ? 'Already converted' : 'Convert to invoice'}
                       >
                         <ArrowRight className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleArchive(quote.id)}
-                        className="text-yellow-600 hover:text-yellow-900"
+                        className="text-yellow-600 hover:text-yellow-900 p-1 hover:bg-yellow-50 rounded"
                         title="Archive"
                       >
                         <Archive className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(quote.id)}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />

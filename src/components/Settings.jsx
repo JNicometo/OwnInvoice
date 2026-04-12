@@ -155,6 +155,16 @@ function Settings({ isLicensed, onLicenseChange }) {
     show_logo_on_invoice: true,
     show_company_address_on_invoice: true,
     show_invoice_border: true,
+    show_due_date_on_invoice: true,
+    show_status_on_invoice: true,
+    show_subtotal_on_invoice: true,
+    show_tax_on_invoice: true,
+    show_notes_on_invoice: true,
+    show_bank_details_on_invoice: true,
+    show_footer_on_invoice: true,
+    show_item_quantity_on_invoice: true,
+    show_item_rate_on_invoice: true,
+    show_accent_bar_on_invoice: true,
     invoice_corner_style: 'rounded',
 
     // Theme - PDF Options
@@ -411,6 +421,16 @@ function Settings({ isLicensed, onLicenseChange }) {
           show_logo_on_invoice: data.show_logo_on_invoice !== undefined ? data.show_logo_on_invoice : true,
           show_company_address_on_invoice: data.show_company_address_on_invoice !== undefined ? data.show_company_address_on_invoice : true,
           show_invoice_border: data.show_invoice_border !== undefined ? data.show_invoice_border : true,
+          show_due_date_on_invoice: data.show_due_date_on_invoice !== undefined ? data.show_due_date_on_invoice : true,
+          show_status_on_invoice: data.show_status_on_invoice !== undefined ? data.show_status_on_invoice : true,
+          show_subtotal_on_invoice: data.show_subtotal_on_invoice !== undefined ? data.show_subtotal_on_invoice : true,
+          show_tax_on_invoice: data.show_tax_on_invoice !== undefined ? data.show_tax_on_invoice : true,
+          show_notes_on_invoice: data.show_notes_on_invoice !== undefined ? data.show_notes_on_invoice : true,
+          show_bank_details_on_invoice: data.show_bank_details_on_invoice !== undefined ? data.show_bank_details_on_invoice : true,
+          show_footer_on_invoice: data.show_footer_on_invoice !== undefined ? data.show_footer_on_invoice : true,
+          show_item_quantity_on_invoice: data.show_item_quantity_on_invoice !== undefined ? data.show_item_quantity_on_invoice : true,
+          show_item_rate_on_invoice: data.show_item_rate_on_invoice !== undefined ? data.show_item_rate_on_invoice : true,
+          show_accent_bar_on_invoice: data.show_accent_bar_on_invoice !== undefined ? data.show_accent_bar_on_invoice : true,
           invoice_corner_style: data.invoice_corner_style || 'rounded',
 
           // Theme - PDF Options
@@ -2060,6 +2080,186 @@ function Settings({ isLicensed, onLicenseChange }) {
                         />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                       </label>
+                    </div>
+                  </div>
+
+                  {/* Invoice Layout Elements Section */}
+                  <div className="mt-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Layout Elements</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Choose which sections and columns appear on your invoices
+                    </p>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Show Due Date</p>
+                          <p className="text-sm text-gray-500">Display due date in invoice details</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="show_due_date_on_invoice"
+                            checked={formData.show_due_date_on_invoice}
+                            onChange={(e) => setFormData(prev => ({ ...prev, show_due_date_on_invoice: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Show Status Badge</p>
+                          <p className="text-sm text-gray-500">Display status (Draft, Paid, Overdue) on invoice</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="show_status_on_invoice"
+                            checked={formData.show_status_on_invoice}
+                            onChange={(e) => setFormData(prev => ({ ...prev, show_status_on_invoice: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Show Quantity Column</p>
+                          <p className="text-sm text-gray-500">Display Qty column in line items table</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="show_item_quantity_on_invoice"
+                            checked={formData.show_item_quantity_on_invoice}
+                            onChange={(e) => setFormData(prev => ({ ...prev, show_item_quantity_on_invoice: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Show Rate Column</p>
+                          <p className="text-sm text-gray-500">Display Rate column in line items table</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="show_item_rate_on_invoice"
+                            checked={formData.show_item_rate_on_invoice}
+                            onChange={(e) => setFormData(prev => ({ ...prev, show_item_rate_on_invoice: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Show Subtotal</p>
+                          <p className="text-sm text-gray-500">Display subtotal row in invoice totals</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="show_subtotal_on_invoice"
+                            checked={formData.show_subtotal_on_invoice}
+                            onChange={(e) => setFormData(prev => ({ ...prev, show_subtotal_on_invoice: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Show Tax</p>
+                          <p className="text-sm text-gray-500">Display tax row in invoice totals</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="show_tax_on_invoice"
+                            checked={formData.show_tax_on_invoice}
+                            onChange={(e) => setFormData(prev => ({ ...prev, show_tax_on_invoice: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Show Notes</p>
+                          <p className="text-sm text-gray-500">Display notes section at bottom of invoice</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="show_notes_on_invoice"
+                            checked={formData.show_notes_on_invoice}
+                            onChange={(e) => setFormData(prev => ({ ...prev, show_notes_on_invoice: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Show Bank Details</p>
+                          <p className="text-sm text-gray-500">Display bank/payment details on invoice</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="show_bank_details_on_invoice"
+                            checked={formData.show_bank_details_on_invoice}
+                            onChange={(e) => setFormData(prev => ({ ...prev, show_bank_details_on_invoice: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Show Footer Message</p>
+                          <p className="text-sm text-gray-500">Display footer text at bottom of invoice</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="show_footer_on_invoice"
+                            checked={formData.show_footer_on_invoice}
+                            onChange={(e) => setFormData(prev => ({ ...prev, show_footer_on_invoice: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900">Show Accent Bar</p>
+                          <p className="text-sm text-gray-500">Display colored gradient bar at top of invoice</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="show_accent_bar_on_invoice"
+                            checked={formData.show_accent_bar_on_invoice}
+                            onChange={(e) => setFormData(prev => ({ ...prev, show_accent_bar_on_invoice: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
                     </div>
                   </div>
 

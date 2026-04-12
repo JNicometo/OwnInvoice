@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Home, FileText, Users, Archive as ArchiveIcon, Settings as SettingsIcon, Save, X, Keyboard, Search, Repeat, TrendingUp, FileX, Bell } from 'lucide-react';
+import { Home, FileText, Users, Archive as ArchiveIcon, Settings as SettingsIcon, Save, X, Keyboard, Search, Repeat, TrendingUp, FileX, Bell, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import InvoiceList from './components/InvoiceList';
 import ClientManagement from './components/ClientManagement';
@@ -28,6 +28,7 @@ function App() {
   const [trialStatus, setTrialStatus] = useState(null);
   const [appError, setAppError] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', resolve: null });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const searchInputRef = useRef(null);
 
   const { getAllInvoices, getAllClients, getAllSavedItems, getSettings } = useDatabase();
@@ -413,81 +414,113 @@ function App() {
         </div>
       )}
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-lg">
-        <div className="p-6">
-          <div className="flex items-center gap-3">
-            <img src={require('./assets/logo.png')} alt="OwnInvoice" className="w-10 h-10 rounded-lg" />
-            <div>
-              <h1 className="text-2xl font-bold text-blue-600">OwnInvoice</h1>
-              <p className="text-sm text-gray-500">by Grit Software</p>
-            </div>
+      <div className={`${sidebarCollapsed ? 'app-sidebar-collapsed' : 'app-sidebar'} bg-white shadow-lg flex-shrink-0 flex flex-col h-full overflow-hidden transition-all duration-200`}>
+        <div className={`${sidebarCollapsed ? 'p-3' : 'p-4 xl:p-6'}`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-2 xl:gap-3'}`}>
+            <img src={require('./assets/logo.png')} alt="OwnInvoice" className="w-8 h-8 xl:w-10 xl:h-10 rounded-lg flex-shrink-0" />
+            {!sidebarCollapsed && (
+              <div>
+                <h1 className="text-xl xl:text-2xl font-bold text-blue-600">OwnInvoice</h1>
+                <p className="text-xs xl:text-sm text-gray-500">by Grit Software</p>
+              </div>
+            )}
           </div>
         </div>
 
-        <nav className="px-4 space-y-1">
+        <nav className={`${sidebarCollapsed ? 'px-2' : 'px-3 xl:px-4'} space-y-0.5 xl:space-y-1 flex-1 overflow-y-auto`}>
           {navigation.map((item) => {
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
                 onClick={() => setCurrentView(item.id)}
-                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                title={sidebarCollapsed ? item.name : undefined}
+                className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'px-3 xl:px-4 py-2 xl:py-3'} text-sm font-medium rounded-lg transition-colors ${
                   currentView === item.id
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <Icon className="w-5 h-5 mr-3" />
-                {item.name}
+                <Icon className={`w-5 h-5 flex-shrink-0 ${sidebarCollapsed ? '' : 'mr-2 xl:mr-3'}`} />
+                {!sidebarCollapsed && <span className="truncate">{item.name}</span>}
               </button>
             );
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 w-64 p-4 border-t">
+        <div className={`${sidebarCollapsed ? 'p-2' : 'p-3 xl:p-4'} border-t flex-shrink-0`}>
+          {!sidebarCollapsed && (
+            <>
+              <button
+                onClick={() => setShowSearch(true)}
+                className="w-full flex items-center justify-center px-2 py-1.5 xl:py-2 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors mb-1 xl:mb-2"
+              >
+                <Search className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Global Search (Ctrl+F)</span>
+              </button>
+              <button
+                onClick={() => setShowKeyboardHelp(true)}
+                className="w-full flex items-center justify-center px-2 py-1.5 xl:py-2 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors mb-1 xl:mb-2"
+              >
+                <Keyboard className="w-4 h-4 mr-2 flex-shrink-0" />
+                <span className="truncate">Keyboard Shortcuts</span>
+              </button>
+              <p className="text-xs text-gray-500 text-center truncate mb-2">
+                OwnInvoice Desktop v1.0.0
+              </p>
+            </>
+          )}
+          {sidebarCollapsed && (
+            <>
+              <button
+                onClick={() => setShowSearch(true)}
+                title="Global Search (Ctrl+F)"
+                className="w-full flex items-center justify-center py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowKeyboardHelp(true)}
+                title="Keyboard Shortcuts"
+                className="w-full flex items-center justify-center py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+              >
+                <Keyboard className="w-4 h-4" />
+              </button>
+            </>
+          )}
           <button
-            onClick={() => setShowSearch(true)}
-            className="w-full flex items-center justify-center px-3 py-2 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors mb-2"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className={`w-full flex items-center justify-center py-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors ${sidebarCollapsed ? '' : 'gap-2'}`}
           >
-            <Search className="w-4 h-4 mr-2" />
-            Global Search (Ctrl+F)
+            {sidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <><PanelLeftClose className="w-4 h-4" /><span className="text-xs">Collapse</span></>}
           </button>
-          <button
-            onClick={() => setShowKeyboardHelp(true)}
-            className="w-full flex items-center justify-center px-3 py-2 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors mb-2"
-          >
-            <Keyboard className="w-4 h-4 mr-2" />
-            Keyboard Shortcuts
-          </button>
-          <p className="text-xs text-gray-500 text-center">
-            OwnInvoice Desktop v1.0.0
-          </p>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto flex flex-col">
+      <div className="flex-1 min-w-0 overflow-auto flex flex-col">
         {/* Trial Banner */}
         {!isLicensed && trialStatus && (
-          <div className={`${trialStatus.trialExpired ? 'bg-gradient-to-r from-red-600 to-red-700' : 'bg-gradient-to-r from-blue-600 to-blue-700'} text-white px-4 py-2.5 flex items-center justify-between flex-shrink-0`}>
-            <div className="flex items-center gap-4 text-sm">
-              <span className="font-semibold">
+          <div className={`${trialStatus.trialExpired ? 'bg-gradient-to-r from-red-600 to-red-700' : 'bg-gradient-to-r from-blue-600 to-blue-700'} text-white px-3 xl:px-4 py-2 xl:py-2.5 flex items-center justify-between flex-shrink-0 gap-2`}>
+            <div className="flex items-center gap-2 xl:gap-4 text-xs xl:text-sm flex-wrap min-w-0">
+              <span className="font-semibold whitespace-nowrap">
                 {trialStatus.trialExpired
                   ? 'Trial Expired'
                   : `Trial Mode \u2014 ${trialStatus.trialDaysRemaining ?? 7} day${(trialStatus.trialDaysRemaining ?? 7) === 1 ? '' : 's'} left`}
               </span>
               {!trialStatus.trialExpired && (
                 <>
-                  <span className="opacity-90">
+                  <span className="opacity-90 whitespace-nowrap">
                     Invoices: {trialStatus.counts?.invoices ?? 0}/{trialStatus.limits?.invoices ?? 5}
                   </span>
-                  <span className="opacity-90">
+                  <span className="opacity-90 whitespace-nowrap">
                     Quotes: {trialStatus.counts?.quotes ?? 0}/{trialStatus.limits?.quotes ?? 5}
                   </span>
-                  <span className="opacity-90">
+                  <span className="opacity-90 whitespace-nowrap">
                     Clients: {trialStatus.counts?.clients ?? 0}/{trialStatus.limits?.clients ?? 5}
                   </span>
-                  <span className="opacity-90">
+                  <span className="opacity-90 whitespace-nowrap">
                     Items: {trialStatus.counts?.savedItems ?? 0}/{trialStatus.limits?.savedItems ?? 5}
                   </span>
                 </>
@@ -496,18 +529,18 @@ function App() {
                 <span className="opacity-90">Activate a license to continue using OwnInvoice.</span>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 xl:gap-3 flex-shrink-0">
               <a
                 href="https://gritsoftware.dev"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`px-4 py-1.5 bg-white ${trialStatus.trialExpired ? 'text-red-700' : 'text-blue-700'} rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors`}
+                className={`px-3 xl:px-4 py-1 xl:py-1.5 bg-white ${trialStatus.trialExpired ? 'text-red-700' : 'text-blue-700'} rounded-lg text-xs xl:text-sm font-semibold hover:bg-blue-50 transition-colors whitespace-nowrap`}
               >
                 {trialStatus.trialExpired ? 'Get a License' : 'Upgrade'}
               </a>
               <button
                 onClick={() => setCurrentView('settings')}
-                className={`text-sm ${trialStatus.trialExpired ? 'text-red-200' : 'text-blue-200'} hover:text-white transition-colors`}
+                className={`text-xs xl:text-sm ${trialStatus.trialExpired ? 'text-red-200' : 'text-blue-200'} hover:text-white transition-colors whitespace-nowrap`}
               >
                 Activate License
               </button>

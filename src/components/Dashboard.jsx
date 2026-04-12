@@ -140,14 +140,14 @@ function Dashboard({ onNavigateToInvoices }) {
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Welcome back! Here's your business overview.</p>
+    <div className="p-4 lg:p-6 xl:p-8">
+      <div className="mb-6 xl:mb-8">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-500 mt-1 text-sm lg:text-base">Welcome back! Here's your business overview.</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 xl:gap-6 mb-6 xl:mb-8">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           const isClickable = stat.filter !== undefined;

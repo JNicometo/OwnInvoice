@@ -360,7 +360,7 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
         </style>
       </head>
       <body>
-        <div class="accent-line"></div>
+        ${(settings?.show_accent_bar_on_invoice ?? 1) ? '<div class="accent-line"></div>' : ''}
 
         <div class="header">
           <div>
@@ -435,11 +435,13 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
               <span class="dt">Invoice Date</span>
               <span class="dd">${formatDate(fullInvoice?.date || '')}</span>
             </div>
+            ${(settings?.show_due_date_on_invoice ?? 1) ? `
             <div class="detail-item">
               <span class="dt">Due Date</span>
               <span class="dd">${formatDate(fullInvoice?.due_date || '')}</span>
             </div>
-            ${fullInvoice?.payment_terms ? `
+            ` : ''}
+            ${(fullInvoice?.payment_terms && !fullInvoice.payment_terms.match(/due\s*(on|upon)\s*receipt/i)) ? `
             <div class="detail-item">
               <span class="dt">Terms</span>
               <span class="dd">${fullInvoice.payment_terms}</span>
@@ -462,9 +464,9 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
               <tr>
                 ${settings?.show_item_sku_on_invoice ? '<th style="width:72px">SKU</th>' : ''}
                 <th>Description</th>
-                <th class="c" style="width:48px">Qty</th>
+                ${(settings?.show_item_quantity_on_invoice ?? 1) ? '<th class="c" style="width:48px">Qty</th>' : ''}
                 ${settings?.show_item_unit_on_invoice ? '<th class="c" style="width:56px">Unit</th>' : ''}
-                <th class="r" style="width:88px">Rate</th>
+                ${(settings?.show_item_rate_on_invoice ?? 1) ? '<th class="r" style="width:88px">Rate</th>' : ''}
                 <th class="r" style="width:96px">Amount</th>
               </tr>
             </thead>
@@ -473,9 +475,9 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
                 <tr>
                   ${settings?.show_item_sku_on_invoice ? `<td class="sku-cell">${item.sku || '-'}</td>` : ''}
                   <td><div class="desc-main">${item.description}</div></td>
-                  <td class="c">${item.quantity}</td>
+                  ${(settings?.show_item_quantity_on_invoice ?? 1) ? `<td class="c">${item.quantity}</td>` : ''}
                   ${settings?.show_item_unit_on_invoice ? `<td class="c">${item.unit_of_measure || 'Each'}</td>` : ''}
-                  <td class="r">${formatCurrency(item.rate)}</td>
+                  ${(settings?.show_item_rate_on_invoice ?? 1) ? `<td class="r">${formatCurrency(item.rate)}</td>` : ''}
                   <td class="r amount">${formatCurrency(item.amount)}</td>
                 </tr>
               `).join('')}
@@ -485,10 +487,12 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
 
         <div class="totals-area">
           <div class="totals-stack">
+            ${(settings?.show_subtotal_on_invoice ?? 1) ? `
             <div class="t-row">
               <span class="t-label">Subtotal</span>
               <span class="t-val">${formatCurrency(fullInvoice?.subtotal || 0)}</span>
             </div>
+            ` : ''}
             ${fullInvoice?.discount_amount ? `
             <div class="t-row">
               <span class="t-label">Discount${fullInvoice.discount_type === 'percentage' ? ` (${fullInvoice.discount_value}%)` : ''}</span>
@@ -501,10 +505,12 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
               <span class="t-val">${formatCurrency(fullInvoice.shipping)}</span>
             </div>
             ` : ''}
+            ${(settings?.show_tax_on_invoice ?? 1) ? `
             <div class="t-row">
               <span class="t-label">Tax (${settings?.tax_rate || 0}%)</span>
               <span class="t-val">${formatCurrency(fullInvoice?.tax || 0)}</span>
             </div>
+            ` : ''}
             ${fullInvoice?.adjustment ? `
             <div class="t-row">
               <span class="t-label">${fullInvoice.adjustment_label || 'Adjustment'}</span>
@@ -520,19 +526,19 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
         </div>
 
         <div class="bottom-row">
-          ${fullInvoice?.notes ? `
+          ${(fullInvoice?.notes && (settings?.show_notes_on_invoice ?? 1)) ? `
           <div class="bottom-item">
             <h4>Notes</h4>
             <p>${fullInvoice.notes}</p>
           </div>
           ` : ''}
-          ${((settings?.show_payment_terms ?? 1) && settings?.payment_terms) ? `
+          ${((settings?.show_payment_terms ?? 1) && settings?.payment_terms && !settings.payment_terms.match(/due\s*(on|upon)\s*receipt/i)) ? `
           <div class="bottom-item">
             <h4>Payment Terms</h4>
             <p>${settings.payment_terms}</p>
           </div>
           ` : ''}
-          ${settings?.bank_details ? `
+          ${(settings?.bank_details && (settings?.show_bank_details_on_invoice ?? 1)) ? `
           <div class="bottom-item">
             <h4>Bank Details</h4>
             <p>${settings.bank_details}</p>
@@ -540,10 +546,12 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
           ` : ''}
         </div>
 
+        ${(settings?.show_footer_on_invoice ?? 1) ? `
         <div class="footer">
           <div class="footer-thank">${settings?.invoice_footer || 'Thank you for your business!'}</div>
           <div class="footer-info">${settings?.company_name || 'Your Company'}${settings?.company_email ? ` &middot; ${settings.company_email}` : ''}${settings?.company_website ? ` &middot; ${settings.company_website}` : ''}</div>
         </div>
+        ` : ''}
       </body>
       </html>
     `;
@@ -1702,7 +1710,9 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
         {/* Invoice Document - On-screen preview matching PDF design */}
         <div className="invoice-doc bg-white shadow-lg overflow-hidden rounded-lg" style={{ fontFamily: settings?.body_font || 'Segoe UI, system-ui, sans-serif' }}>
           {/* Accent line */}
-          <div style={{ height: '4px', background: `linear-gradient(90deg, ${settings?.invoice_accent_color || '#2563eb'} 0%, #7c3aed 100%)` }} />
+          {(settings?.show_accent_bar_on_invoice ?? 1) && (
+            <div style={{ height: '4px', background: `linear-gradient(90deg, ${settings?.invoice_accent_color || '#2563eb'} 0%, #7c3aed 100%)` }} />
+          )}
 
           {/* Header */}
           <div className="flex justify-between items-start" style={{ padding: '32px 40px 24px' }}>
@@ -1775,25 +1785,29 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
                 <span style={{ color: '#94a3b8', fontWeight: 500 }}>Invoice Date</span>
                 <span style={{ color: settings?.text_primary_color || '#1e293b', fontWeight: 600 }}>{formatDate(fullInvoice.date)}</span>
               </div>
-              <div className="flex justify-between" style={{ padding: '4px 0', fontSize: '11px' }}>
-                <span style={{ color: '#94a3b8', fontWeight: 500 }}>Due Date</span>
-                <span style={{ color: settings?.text_primary_color || '#1e293b', fontWeight: 600 }}>{formatDate(fullInvoice.due_date)}</span>
-              </div>
-              {fullInvoice.payment_terms && (
+              {(settings?.show_due_date_on_invoice ?? 1) && (
+                <div className="flex justify-between" style={{ padding: '4px 0', fontSize: '11px' }}>
+                  <span style={{ color: '#94a3b8', fontWeight: 500 }}>Due Date</span>
+                  <span style={{ color: settings?.text_primary_color || '#1e293b', fontWeight: 600 }}>{formatDate(fullInvoice.due_date)}</span>
+                </div>
+              )}
+              {(fullInvoice.payment_terms && !/due\s*(on|upon)\s*receipt/i.test(fullInvoice.payment_terms)) && (
                 <div className="flex justify-between" style={{ padding: '4px 0', fontSize: '11px' }}>
                   <span style={{ color: '#94a3b8', fontWeight: 500 }}>Terms</span>
                   <span style={{ color: settings?.text_primary_color || '#1e293b', fontWeight: 600 }}>{fullInvoice.payment_terms}</span>
                 </div>
               )}
-              <div className="flex justify-between" style={{ padding: '4px 0', fontSize: '11px' }}>
-                <span style={{ color: '#94a3b8', fontWeight: 500 }}>Status</span>
-                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                  fullInvoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                  fullInvoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  fullInvoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>{fullInvoice.status?.toUpperCase()}</span>
-              </div>
+              {(settings?.show_status_on_invoice ?? 1) && (
+                <div className="flex justify-between" style={{ padding: '4px 0', fontSize: '11px' }}>
+                  <span style={{ color: '#94a3b8', fontWeight: 500 }}>Status</span>
+                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                    fullInvoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+                    fullInvoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    fullInvoice.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>{fullInvoice.status?.toUpperCase()}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1806,9 +1820,9 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
                 <tr>
                   {settings?.show_item_sku_on_invoice && <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'left', width: '72px' }}>SKU</th>}
                   <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'left' }}>Description</th>
-                  <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'center', width: '48px' }}>Qty</th>
+                  {(settings?.show_item_quantity_on_invoice ?? 1) && <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'center', width: '48px' }}>Qty</th>}
                   {settings?.show_item_unit_on_invoice && <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'center', width: '56px' }}>Unit</th>}
-                  <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'right', width: '88px' }}>Rate</th>
+                  {(settings?.show_item_rate_on_invoice ?? 1) && <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'right', width: '88px' }}>Rate</th>}
                   <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'right', width: '96px' }}>Amount</th>
                 </tr>
               </thead>
@@ -1817,9 +1831,9 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
                   <tr key={index}>
                     {settings?.show_item_sku_on_invoice && <td style={{ padding: '10px 12px', fontSize: '10px', color: settings?.text_secondary_color || '#64748b', borderBottom: '1px solid #f1f5f9', fontFamily: 'SF Mono, Consolas, monospace', whiteSpace: 'nowrap', verticalAlign: 'top' }}>{item.sku || '-'}</td>}
                     <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.invoice_header_color || '#0f172a', borderBottom: '1px solid #f1f5f9', fontWeight: 500, verticalAlign: 'top' }}>{item.description}</td>
-                    <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.text_primary_color || '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'center', verticalAlign: 'top' }}>{item.quantity}</td>
+                    {(settings?.show_item_quantity_on_invoice ?? 1) && <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.text_primary_color || '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'center', verticalAlign: 'top' }}>{item.quantity}</td>}
                     {settings?.show_item_unit_on_invoice && <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.text_primary_color || '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'center', verticalAlign: 'top' }}>{item.unit_of_measure || 'Each'}</td>}
-                    <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.text_primary_color || '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'right', fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{formatCurrency(item.rate)}</td>
+                    {(settings?.show_item_rate_on_invoice ?? 1) && <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.text_primary_color || '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'right', fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{formatCurrency(item.rate)}</td>}
                     <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.invoice_header_color || '#0f172a', borderBottom: '1px solid #f1f5f9', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{formatCurrency(item.amount)}</td>
                   </tr>
                 ))}
@@ -1830,10 +1844,12 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
           {/* Totals */}
           <div className="flex justify-end" style={{ padding: '12px 40px 0' }}>
             <div style={{ width: '260px' }}>
-              <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
-                <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Subtotal</span>
-                <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullInvoice.subtotal)}</span>
-              </div>
+              {(settings?.show_subtotal_on_invoice ?? 1) && (
+                <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Subtotal</span>
+                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullInvoice.subtotal)}</span>
+                </div>
+              )}
               {fullInvoice.discount_amount > 0 && (
                 <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
                   <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Discount{fullInvoice.discount_type === 'percentage' ? ` (${fullInvoice.discount_value}%)` : ''}</span>
@@ -1846,10 +1862,12 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
                   <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullInvoice.shipping)}</span>
                 </div>
               )}
-              <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
-                <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Tax ({settings?.tax_rate || 0}%)</span>
-                <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullInvoice.tax)}</span>
-              </div>
+              {(settings?.show_tax_on_invoice ?? 1) && (
+                <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Tax ({settings?.tax_rate || 0}%)</span>
+                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullInvoice.tax)}</span>
+                </div>
+              )}
               {fullInvoice.adjustment !== 0 && fullInvoice.adjustment != null && (
                 <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
                   <span style={{ color: settings?.text_secondary_color || '#64748b' }}>{fullInvoice.adjustment_label || 'Adjustment'}</span>
@@ -1866,19 +1884,19 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
 
           {/* Bottom row */}
           <div className="flex" style={{ gap: '16px', padding: '20px 40px 0' }}>
-            {fullInvoice.notes && (
+            {(fullInvoice.notes && (settings?.show_notes_on_invoice ?? 1)) && (
               <div style={{ flex: 1, minWidth: 0, paddingTop: '12px', borderTop: '2px solid #f1f5f9' }}>
                 <h4 style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: settings?.invoice_accent_color || '#2563eb', marginBottom: '5px' }}>Notes</h4>
                 <p style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{fullInvoice.notes}</p>
               </div>
             )}
-            {((settings?.show_payment_terms ?? 1) && settings?.payment_terms) && (
+            {((settings?.show_payment_terms ?? 1) && settings?.payment_terms && !/due\s*(on|upon)\s*receipt/i.test(settings.payment_terms)) && (
               <div style={{ flex: 1, minWidth: 0, paddingTop: '12px', borderTop: '2px solid #f1f5f9' }}>
                 <h4 style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: settings?.invoice_accent_color || '#2563eb', marginBottom: '5px' }}>Payment Terms</h4>
                 <p style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{settings.payment_terms}</p>
               </div>
             )}
-            {settings?.bank_details && (
+            {(settings?.bank_details && (settings?.show_bank_details_on_invoice ?? 1)) && (
               <div style={{ flex: 1, minWidth: 0, paddingTop: '12px', borderTop: '2px solid #f1f5f9' }}>
                 <h4 style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: settings?.invoice_accent_color || '#2563eb', marginBottom: '5px' }}>Bank Details</h4>
                 <p style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{settings.bank_details}</p>
@@ -1887,10 +1905,12 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
           </div>
 
           {/* Footer */}
-          <div style={{ margin: '22px 40px 0', padding: '16px 0 28px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: settings?.invoice_accent_color || '#2563eb', marginBottom: '2px' }}>{settings?.invoice_footer || 'Thank you for your business!'}</div>
-            <div style={{ fontSize: '10px', color: '#94a3b8' }}>{settings?.company_name || 'Your Company'}{settings?.company_email && ` · ${settings.company_email}`}{settings?.company_website && ` · ${settings.company_website}`}</div>
-          </div>
+          {(settings?.show_footer_on_invoice ?? 1) && (
+            <div style={{ margin: '22px 40px 0', padding: '16px 0 28px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: settings?.invoice_accent_color || '#2563eb', marginBottom: '2px' }}>{settings?.invoice_footer || 'Thank you for your business!'}</div>
+              <div style={{ fontSize: '10px', color: '#94a3b8' }}>{settings?.company_name || 'Your Company'}{settings?.company_email && ` · ${settings.company_email}`}{settings?.company_website && ` · ${settings.company_website}`}</div>
+            </div>
+          )}
         </div>
       </div>
     </div>

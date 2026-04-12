@@ -198,6 +198,16 @@ const runMigrations = () => {
       { name: 'show_logo_on_invoice', type: 'INTEGER', default: '1' },
       { name: 'show_company_address_on_invoice', type: 'INTEGER', default: '1' },
       { name: 'show_invoice_border', type: 'INTEGER', default: '1' },
+      { name: 'show_due_date_on_invoice', type: 'INTEGER', default: '1' },
+      { name: 'show_status_on_invoice', type: 'INTEGER', default: '1' },
+      { name: 'show_subtotal_on_invoice', type: 'INTEGER', default: '1' },
+      { name: 'show_tax_on_invoice', type: 'INTEGER', default: '1' },
+      { name: 'show_notes_on_invoice', type: 'INTEGER', default: '1' },
+      { name: 'show_bank_details_on_invoice', type: 'INTEGER', default: '1' },
+      { name: 'show_footer_on_invoice', type: 'INTEGER', default: '1' },
+      { name: 'show_item_quantity_on_invoice', type: 'INTEGER', default: '1' },
+      { name: 'show_item_rate_on_invoice', type: 'INTEGER', default: '1' },
+      { name: 'show_accent_bar_on_invoice', type: 'INTEGER', default: '1' },
       { name: 'invoice_corner_style', type: 'TEXT', default: "'rounded'" },
 
       // Theme - PDF
@@ -766,7 +776,9 @@ const runMigrations = () => {
       { name: 'default_discount_rate', type: 'REAL', default: '0' },
       { name: 'currency', type: 'TEXT', default: "'USD'" },
       { name: 'language', type: 'TEXT', default: "'en'" },
-      { name: 'tags', type: 'TEXT', default: "''" }
+      { name: 'tags', type: 'TEXT', default: "''" },
+      // Per-client tax rate (NULL = use global default)
+      { name: 'tax_rate', type: 'REAL', default: 'NULL' }
     ];
 
     let clientColumnsAdded = 0;
@@ -1101,6 +1113,16 @@ const updateSettings = (settings) => {
       show_logo_on_invoice = @show_logo_on_invoice,
       show_company_address_on_invoice = @show_company_address_on_invoice,
       show_invoice_border = @show_invoice_border,
+      show_due_date_on_invoice = @show_due_date_on_invoice,
+      show_status_on_invoice = @show_status_on_invoice,
+      show_subtotal_on_invoice = @show_subtotal_on_invoice,
+      show_tax_on_invoice = @show_tax_on_invoice,
+      show_notes_on_invoice = @show_notes_on_invoice,
+      show_bank_details_on_invoice = @show_bank_details_on_invoice,
+      show_footer_on_invoice = @show_footer_on_invoice,
+      show_item_quantity_on_invoice = @show_item_quantity_on_invoice,
+      show_item_rate_on_invoice = @show_item_rate_on_invoice,
+      show_accent_bar_on_invoice = @show_accent_bar_on_invoice,
       invoice_corner_style = @invoice_corner_style,
       pdf_page_size = @pdf_page_size,
       pdf_margin_size = @pdf_margin_size,
@@ -1175,7 +1197,7 @@ const createClient = (client) => {
       billing_email, billing_address, billing_city, billing_state, billing_zip,
       shipping_address, shipping_city, shipping_state, shipping_zip,
       contact_person, contact_title, secondary_contact, secondary_email, secondary_phone,
-      account_manager, preferred_payment_method, default_discount_rate, currency, language, tags
+      account_manager, preferred_payment_method, default_discount_rate, currency, language, tags, tax_rate
     ) VALUES (
       @customer_number, @name, @email, @phone, @address, @city, @state, @zip,
       @notes, @credit_limit, @current_credit, @payment_terms, @tax_exempt, @tax_id,
@@ -1183,7 +1205,7 @@ const createClient = (client) => {
       @billing_email, @billing_address, @billing_city, @billing_state, @billing_zip,
       @shipping_address, @shipping_city, @shipping_state, @shipping_zip,
       @contact_person, @contact_title, @secondary_contact, @secondary_email, @secondary_phone,
-      @account_manager, @preferred_payment_method, @default_discount_rate, @currency, @language, @tags
+      @account_manager, @preferred_payment_method, @default_discount_rate, @currency, @language, @tags, @tax_rate
     )
   `);
   return stmt.run({
@@ -1224,7 +1246,8 @@ const createClient = (client) => {
     default_discount_rate: client.default_discount_rate || 0,
     currency: client.currency || 'USD',
     language: client.language || 'en',
-    tags: client.tags || ''
+    tags: client.tags || '',
+    tax_rate: (client.tax_rate !== '' && client.tax_rate != null) ? parseFloat(client.tax_rate) : null
   });
 };
 
@@ -1270,6 +1293,7 @@ const updateClient = (id, client) => {
       currency = @currency,
       language = @language,
       tags = @tags,
+      tax_rate = @tax_rate,
       updated_at = CURRENT_TIMESTAMP
     WHERE id = @id
   `);
@@ -1312,7 +1336,8 @@ const updateClient = (id, client) => {
     default_discount_rate: client.default_discount_rate || 0,
     currency: client.currency || 'USD',
     language: client.language || 'en',
-    tags: client.tags || ''
+    tags: client.tags || '',
+    tax_rate: (client.tax_rate !== '' && client.tax_rate != null) ? parseFloat(client.tax_rate) : null
   });
 };
 

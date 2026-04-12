@@ -35,6 +35,8 @@ code {
   }
 
   /* Hide sidebar and only show main content */
+  .app-sidebar,
+  .app-sidebar-collapsed,
   .flex.h-screen > div:first-child {
     display: none !important;
   }
@@ -80,6 +82,48 @@ body.printing #root > div > div:first-child {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Responsive sidebar */
+.app-sidebar {
+  width: 220px;
+  min-width: 180px;
+  transition: width 0.2s ease;
+}
+
+.app-sidebar-collapsed {
+  width: 60px;
+  min-width: 60px;
+  transition: width 0.2s ease;
+}
+
+@media (min-width: 1280px) {
+  .app-sidebar {
+    width: 256px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .app-sidebar {
+    width: 280px;
+  }
+}
+
+/* Tighter table cell padding on smaller screens */
+@media (max-width: 1279px) {
+  table th.px-6,
+  table td.px-6 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+}
+
+/* Ensure table scrolls horizontally on small screens */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+.overflow-x-auto table {
+  table-layout: auto;
 }
 
 /* Custom animations */
@@ -252,7 +296,8 @@ html.dark .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6p
 html.dark .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important; }
 
 /* --- Sidebar --- */
-html.dark .w-64.bg-white.shadow-lg {
+html.dark .app-sidebar.bg-white.shadow-lg,
+html.dark .app-sidebar-collapsed.bg-white.shadow-lg {
   background-color: #1e293b !important;
   border-right: 1px solid #334155;
 }

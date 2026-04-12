@@ -57,6 +57,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     payment_terms: 'NET 30',
     tax_exempt: 0,
     tax_id: '',
+    tax_rate: '',
     // Business Information
     website: '',
     industry: '',
@@ -175,6 +176,7 @@ function ClientManagement({ onNavigateToInvoices }) {
         payment_terms: client.payment_terms || 'NET 30',
         tax_exempt: client.tax_exempt || 0,
         tax_id: client.tax_id || '',
+        tax_rate: client.tax_rate != null ? client.tax_rate : '',
         // Business Information
         website: client.website || '',
         industry: client.industry || '',
@@ -224,6 +226,7 @@ function ClientManagement({ onNavigateToInvoices }) {
         payment_terms: 'NET 30',
         tax_exempt: 0,
         tax_id: '',
+        tax_rate: '',
         // Business Information
         website: '',
         industry: '',
@@ -1051,6 +1054,25 @@ function ClientManagement({ onNavigateToInvoices }) {
                         placeholder="XX-XXXXXXX"
                       />
                     </div>
+
+                    {!formData.tax_exempt && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Tax Rate (%)
+                        </label>
+                        <input
+                          type="number"
+                          name="tax_rate"
+                          value={formData.tax_rate}
+                          onChange={handleInputChange}
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Leave blank for global default"
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">

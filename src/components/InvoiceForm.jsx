@@ -46,6 +46,7 @@ function InvoiceForm({ invoice, onClose }) {
     shipping: 0,
     adjustment: 0,
     adjustment_label: '',
+    tax_rate: '',
   });
 
   const [items, setItems] = useState([
@@ -159,13 +160,33 @@ function InvoiceForm({ invoice, onClose }) {
     loadInvoiceData();
   }, [invoice, getInvoice]);
 
-  // Load shipping addresses when client changes
+  // Load shipping addresses, client tax rate, and payment terms when client changes
   useEffect(() => {
     if (formData.client_id) {
       loadClientAddresses(formData.client_id);
+      const selectedClient = clients.find(c => c.id === parseInt(formData.client_id));
+      if (selectedClient) {
+        const updates = {};
+        // Set per-client tax rate if available
+        updates.tax_rate = selectedClient.tax_rate != null ? selectedClient.tax_rate : '';
+        // Adjust due date based on client payment terms (only for new invoices)
+        if (!isEdit) {
+          const clientTerms = selectedClient.payment_terms || '';
+          if (clientTerms === 'Due on Receipt') {
+            updates.due_date = formData.date;
+          } else if (clientTerms.startsWith('NET ')) {
+            const days = parseInt(clientTerms.replace('NET ', '')) || 30;
+            updates.due_date = calculateDueDate(formData.date, days);
+          }
+        }
+        setFormData(prev => ({ ...prev, ...updates }));
+      } else {
+        setFormData(prev => ({ ...prev, tax_rate: '' }));
+      }
     } else {
       setClientAddresses([]);
       setSelectedAddressId(null);
+      setFormData(prev => ({ ...prev, tax_rate: '' }));
     }
   }, [formData.client_id]);
 
@@ -237,16 +258,13 @@ function InvoiceForm({ invoice, onClose }) {
       setSavedItems(savedItemsData);
       setSettings(settingsData);
 
-      if (!isEdit && previewNumber) {
+      if (!isEdit) {
+        const dueDays = parseInt(settingsData.default_due_days) || 0;
         setFormData(prev => ({
           ...prev,
-          invoice_number: previewNumber,
-          payment_terms: settingsData.payment_terms || ''
-        }));
-      } else if (!isEdit) {
-        setFormData(prev => ({
-          ...prev,
-          payment_terms: settingsData.payment_terms || ''
+          ...(previewNumber ? { invoice_number: previewNumber } : {}),
+          payment_terms: settingsData.payment_terms || '',
+          due_date: calculateDueDate(getCurrentDate(), dueDays)
         }));
       }
     } catch (error) {
@@ -292,7 +310,10 @@ function InvoiceForm({ invoice, onClose }) {
 
     // Calculate tax on (subtotal - discount + shipping)
     const taxableAmount = afterDiscount + shipping;
-    const taxRate = parseFloat(settings?.tax_rate || 0) / 100;
+    const effectiveTaxRate = formData.tax_rate !== '' && formData.tax_rate != null
+      ? parseFloat(formData.tax_rate)
+      : parseFloat(settings?.tax_rate || 0);
+    const taxRate = effectiveTaxRate / 100;
     const tax = taxableAmount * taxRate;
 
     // Add adjustment (can be positive or negative)
@@ -1118,8 +1139,20 @@ function InvoiceForm({ invoice, onClose }) {
                     </div>
                   </div>
 
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Tax ({settings?.tax_rate || 0}%):</span>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-1">
+                      <span className="text-gray-600">Tax (</span>
+                      <input
+                        type="number"
+                        value={formData.tax_rate !== '' && formData.tax_rate != null ? formData.tax_rate : (settings?.tax_rate || 0)}
+                        onChange={(e) => setFormData(prev => ({ ...prev, tax_rate: e.target.value }))}
+                        className="w-16 px-1 py-0.5 border border-gray-300 rounded text-sm text-center"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                      />
+                      <span className="text-gray-600">%):</span>
+                    </div>
                     <span className="font-medium">${totals.tax.toFixed(2)}</span>
                   </div>
 

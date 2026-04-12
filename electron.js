@@ -18,6 +18,65 @@ const crypto = require('crypto');
 
 const jwt = require('jsonwebtoken');
 
+// ========================================
+// SMTP Email Helper with Port Fallback
+// ========================================
+const SMTP_FALLBACK_PORTS = [2525];
+const CONNECTION_ERROR_CODES = ['ESOCKET', 'ECONNECTION', 'ETIMEDOUT', 'ECONNREFUSED', 'EAI_AGAIN'];
+
+function createTransporter(settings, portOverride) {
+  const port = portOverride || parseInt(settings.smtp_port) || 587;
+  return nodemailer.createTransport({
+    host: settings.smtp_host,
+    port: port,
+    secure: port === 465,
+    auth: {
+      user: settings.smtp_user,
+      pass: settings.smtp_password,
+    },
+    tls: {
+      rejectUnauthorized: false,
+      minVersion: 'TLSv1.2'
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 5000
+  });
+}
+
+async function sendMailWithFallback(settings, mailOptions) {
+  const primaryPort = parseInt(settings.smtp_port) || 587;
+  const portsToTry = [primaryPort, ...SMTP_FALLBACK_PORTS.filter(p => p !== primaryPort)];
+  let lastError = null;
+
+  for (const port of portsToTry) {
+    try {
+      const transporter = createTransporter(settings, port);
+      console.log(`SMTP: Trying ${settings.smtp_host}:${port}...`);
+      await transporter.verify();
+      const info = await transporter.sendMail(mailOptions);
+      if (port !== primaryPort) {
+        console.log(`SMTP: Succeeded on fallback port ${port} (primary port ${primaryPort} was blocked)`);
+      }
+      return info;
+    } catch (error) {
+      lastError = error;
+      console.warn(`SMTP: Port ${port} failed -`, error.code || error.message);
+
+      // Only try fallback ports for connection-level errors
+      if (!CONNECTION_ERROR_CODES.includes(error.code)) {
+        throw error; // Auth errors, etc. won't be fixed by changing ports
+      }
+    }
+  }
+
+  // All ports failed - throw a descriptive network error
+  throw Object.assign(new Error(
+    'Could not connect to the email server on any port. ' +
+    'Your network (e.g. mobile hotspot or public Wi-Fi) may be blocking outgoing email connections. ' +
+    'Try switching to a different network, or contact your email provider for alternative SMTP settings.'
+  ), { code: 'ENETWORK_BLOCKED' });
+}
+
 // License activation store (persists in OS app data directory)
 const licenseStore = new Store({
   name: 'license',
@@ -271,8 +330,8 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
-    minWidth: 1024,
-    minHeight: 768,
+    minWidth: 900,
+    minHeight: 600,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -900,34 +959,6 @@ ipcMain.handle('email:sendInvoice', async (event, emailData) => {
       throw new Error('SMTP settings are not configured. Please configure email settings first.');
     }
 
-    // Create a transporter
-    const transporter = nodemailer.createTransport({
-      host: settings.smtp_host,
-      port: parseInt(settings.smtp_port) || 587,
-      secure: settings.smtp_secure === true || settings.smtp_secure === 1, // true for 465, false for other ports
-      auth: {
-        user: settings.smtp_user,
-        pass: settings.smtp_password,
-      },
-      tls: {
-        // More lenient TLS settings for Gmail and other providers
-        rejectUnauthorized: false,
-        minVersion: 'TLSv1.2'
-      },
-      connectionTimeout: 10000, // 10 second timeout
-      greetingTimeout: 5000
-    });
-
-    console.log('SMTP Config:', {
-      host: settings.smtp_host,
-      port: parseInt(settings.smtp_port) || 587,
-      secure: settings.smtp_secure === true || settings.smtp_secure === 1,
-      user: settings.smtp_user
-    });
-
-    // Verify connection configuration
-    await transporter.verify();
-
     // Generate PDF in memory for attachment
     pdfWindow = new BrowserWindow({
       show: false,
@@ -973,16 +1004,11 @@ ipcMain.handle('email:sendInvoice', async (event, emailData) => {
       ]
     };
 
-    // Add CC and BCC if provided
-    if (cc && cc.trim()) {
-      mailOptions.cc = cc;
-    }
-    if (bcc && bcc.trim()) {
-      mailOptions.bcc = bcc;
-    }
+    if (cc && cc.trim()) mailOptions.cc = cc;
+    if (bcc && bcc.trim()) mailOptions.bcc = bcc;
 
-    // Send the email
-    const info = await transporter.sendMail(mailOptions);
+    // Send with automatic port fallback
+    const info = await sendMailWithFallback(settings, mailOptions);
 
     console.log('Email sent successfully:', info.messageId);
     return {
@@ -994,14 +1020,11 @@ ipcMain.handle('email:sendInvoice', async (event, emailData) => {
   } catch (error) {
     console.error('Error sending email:', error);
 
-    // Provide user-friendly error messages
     let errorMessage = error.message;
     if (error.code === 'EAUTH') {
       errorMessage = 'Authentication failed. Please check your SMTP username and password.';
-    } else if (error.code === 'ESOCKET') {
-      errorMessage = 'Could not connect to email server. Please check your SMTP host and port.';
-    } else if (error.code === 'ECONNECTION') {
-      errorMessage = 'Connection failed. Please check your internet connection and SMTP settings.';
+    } else if (error.code === 'ENETWORK_BLOCKED') {
+      errorMessage = error.message;
     }
 
     throw new Error(errorMessage);
@@ -1023,33 +1046,6 @@ ipcMain.handle('email:sendQuote', async (event, emailData) => {
     if (!settings.smtp_host || !settings.smtp_user || !settings.smtp_password) {
       throw new Error('SMTP settings are not configured. Please configure email settings first.');
     }
-
-    // Create a transporter
-    const transporter = nodemailer.createTransport({
-      host: settings.smtp_host,
-      port: parseInt(settings.smtp_port) || 587,
-      secure: settings.smtp_secure === true || settings.smtp_secure === 1,
-      auth: {
-        user: settings.smtp_user,
-        pass: settings.smtp_password,
-      },
-      tls: {
-        rejectUnauthorized: false,
-        minVersion: 'TLSv1.2'
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 5000
-    });
-
-    console.log('SMTP Config for Quote:', {
-      host: settings.smtp_host,
-      port: parseInt(settings.smtp_port) || 587,
-      secure: settings.smtp_secure === true || settings.smtp_secure === 1,
-      user: settings.smtp_user
-    });
-
-    // Verify connection configuration
-    await transporter.verify();
 
     // Generate PDF in memory for attachment
     pdfWindow = new BrowserWindow({
@@ -1096,16 +1092,11 @@ ipcMain.handle('email:sendQuote', async (event, emailData) => {
       ]
     };
 
-    // Add CC and BCC if provided
-    if (cc && cc.trim()) {
-      mailOptions.cc = cc;
-    }
-    if (bcc && bcc.trim()) {
-      mailOptions.bcc = bcc;
-    }
+    if (cc && cc.trim()) mailOptions.cc = cc;
+    if (bcc && bcc.trim()) mailOptions.bcc = bcc;
 
-    // Send the email
-    const info = await transporter.sendMail(mailOptions);
+    // Send with automatic port fallback
+    const info = await sendMailWithFallback(settings, mailOptions);
 
     console.log('Quote email sent successfully:', info.messageId);
     return {
@@ -1117,14 +1108,11 @@ ipcMain.handle('email:sendQuote', async (event, emailData) => {
   } catch (error) {
     console.error('Error sending quote email:', error);
 
-    // Provide user-friendly error messages
     let errorMessage = error.message;
     if (error.code === 'EAUTH') {
       errorMessage = 'Authentication failed. Please check your SMTP username and password.';
-    } else if (error.code === 'ESOCKET') {
-      errorMessage = 'Could not connect to email server. Please check your SMTP host and port.';
-    } else if (error.code === 'ECONNECTION') {
-      errorMessage = 'Connection failed. Please check your internet connection and SMTP settings.';
+    } else if (error.code === 'ENETWORK_BLOCKED') {
+      errorMessage = error.message;
     }
 
     throw new Error(errorMessage);
@@ -2400,23 +2388,6 @@ ipcMain.handle('email:sendInvoiceWithPayment', async (event, emailData) => {
       throw new Error('SMTP settings are not configured. Please configure email settings first.');
     }
 
-    // Create a transporter
-    const transporter = nodemailer.createTransport({
-      host: settings.smtp_host,
-      port: parseInt(settings.smtp_port) || 587,
-      secure: settings.smtp_secure === true || settings.smtp_secure === 1,
-      auth: {
-        user: settings.smtp_user,
-        pass: settings.smtp_password,
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
-
-    // Verify connection configuration
-    await transporter.verify();
-
     // Generate PDF in memory for attachment
     const pdfWindow = new BrowserWindow({
       show: false,
@@ -2443,10 +2414,8 @@ ipcMain.handle('email:sendInvoiceWithPayment', async (event, emailData) => {
 
     pdfWindow.close();
 
-    // Add payment link to email body
     const bodyWithPayment = `${body}\n\n--\n\nPay Online: ${paymentLink}\n\nClick the link above to securely pay this invoice with your credit or debit card.`;
 
-    // Prepare email options
     const mailOptions = {
       from: settings.smtp_from_email
         ? `"${settings.smtp_from_name || settings.company_name}" <${settings.smtp_from_email}>`
@@ -2479,16 +2448,11 @@ ipcMain.handle('email:sendInvoiceWithPayment', async (event, emailData) => {
       ]
     };
 
-    // Add CC and BCC if provided
-    if (cc && cc.trim()) {
-      mailOptions.cc = cc;
-    }
-    if (bcc && bcc.trim()) {
-      mailOptions.bcc = bcc;
-    }
+    if (cc && cc.trim()) mailOptions.cc = cc;
+    if (bcc && bcc.trim()) mailOptions.bcc = bcc;
 
-    // Send the email
-    const info = await transporter.sendMail(mailOptions);
+    // Send with automatic port fallback
+    const info = await sendMailWithFallback(settings, mailOptions);
 
     console.log('Email with payment link sent successfully:', info.messageId);
     return {
@@ -2503,10 +2467,8 @@ ipcMain.handle('email:sendInvoiceWithPayment', async (event, emailData) => {
     let errorMessage = error.message;
     if (error.code === 'EAUTH') {
       errorMessage = 'Authentication failed. Please check your SMTP username and password.';
-    } else if (error.code === 'ESOCKET') {
-      errorMessage = 'Could not connect to email server. Please check your SMTP host and port.';
-    } else if (error.code === 'ECONNECTION') {
-      errorMessage = 'Connection failed. Please check your internet connection and SMTP settings.';
+    } else if (error.code === 'ENETWORK_BLOCKED') {
+      errorMessage = error.message;
     }
 
     throw new Error(errorMessage);
@@ -2913,23 +2875,6 @@ async function sendReminderEmail(invoice, template, client) {
       return false;
     }
 
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      host: settings.smtp_host,
-      port: parseInt(settings.smtp_port) || 587,
-      secure: settings.smtp_secure === true || settings.smtp_secure === 1,
-      auth: {
-        user: settings.smtp_user,
-        pass: settings.smtp_password
-      },
-      tls: {
-        rejectUnauthorized: false,
-        minVersion: 'TLSv1.2'
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 5000
-    });
-
     // Replace template variables
     const subject = template.subject
       .replace('{invoice_number}', invoice.invoice_number)
@@ -2963,7 +2908,8 @@ async function sendReminderEmail(invoice, template, client) {
       ]
     };
 
-    await transporter.sendMail(mailOptions);
+    // Send with automatic port fallback
+    await sendMailWithFallback(settings, mailOptions);
     console.log(`Reminder sent for invoice #${invoice.invoice_number} to ${client.email}`);
 
     return true;

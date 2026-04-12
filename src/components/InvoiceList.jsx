@@ -318,46 +318,46 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-6">
+    <div className="p-4 lg:p-6 xl:p-8">
+      <div className="mb-4 lg:mb-6">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-4 lg:mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
               {viewType === 'all' ? 'Invoices & Quotes' : viewType === 'invoices' ? 'Invoices' : 'Quotes'}
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-gray-500 mt-1 text-sm lg:text-base">
               Manage all your {viewType === 'all' ? 'invoices and quotes' : viewType === 'invoices' ? 'invoices' : 'quotes'}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {(viewType === 'invoices' || viewType === 'all') && (
               <button
                 onClick={() => setShowCSVImport(true)}
-                className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="flex items-center px-3 lg:px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
               >
-                <Upload className="w-5 h-5 mr-2" />
+                <Upload className="w-4 h-4 lg:w-5 lg:h-5 mr-1.5 lg:mr-2" />
                 Import CSV
               </button>
             )}
             <button
               onClick={() => { setSelectedInvoice(null); setShowQuoteForm(true); }}
-              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center px-3 lg:px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
             >
-              <FilePen className="w-5 h-5 mr-2" />
+              <FilePen className="w-4 h-4 lg:w-5 lg:h-5 mr-1.5 lg:mr-2" />
               New Quote
             </button>
             <button
               onClick={() => { setSelectedInvoice(null); setShowForm(true); }}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex items-center px-3 lg:px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <Plus className="w-5 h-5 mr-2" />
+              <Plus className="w-4 h-4 lg:w-5 lg:h-5 mr-1.5 lg:mr-2" />
               New Invoice
             </button>
           </div>
         </div>
 
         {/* View Type Toggle */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4">
           <button
             onClick={() => setViewType('all')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -600,7 +600,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
       )}
 
       {/* Data Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
         {loading ? (
           <div className="text-center py-12">
             <p className="text-gray-500">Loading...</p>
@@ -617,10 +617,10 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
             </button>
           </div>
         ) : (
-          <table className="w-full">
+          <table className="w-full" style={{ minWidth: '700px' }}>
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left">
+                <th className="px-3 lg:px-4 py-3 text-left">
                   <input
                     type="checkbox"
                     checked={selectedInvoices.length === filteredInvoices.length && filteredInvoices.length > 0}
@@ -629,34 +629,34 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                   />
                 </th>
                 {viewType === 'all' && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Type
                   </th>
                 )}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {viewType === 'quotes' ? 'Quote #' : viewType === 'all' ? '#' : 'Invoice #'}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Client
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   {viewType === 'quotes' ? 'Expiry Date' : 'Due Date'}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
                 </th>
                 {viewType !== 'quotes' && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Balance
                   </th>
                 )}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 lg:px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -664,7 +664,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
             <tbody className="divide-y divide-gray-200">
               {filteredInvoices.map((invoice) => (
                 <tr key={invoice.id} className={`hover:bg-gray-50 ${selectedInvoices.includes(invoice.id) ? 'bg-blue-50' : ''}`}>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
                       checked={selectedInvoices.includes(invoice.id)}
@@ -673,7 +673,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                     />
                   </td>
                   {viewType === 'all' && (
-                    <td className="px-6 py-4 whitespace-nowrap text-xs">
+                    <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-xs">
                       <span className={`inline-flex px-2 py-1 font-semibold rounded-full ${
                         isQuoteItem(invoice) ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
                       }`}>
@@ -681,23 +681,23 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                       </span>
                     </td>
                   )}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {isQuoteItem(invoice) ? (invoice.quote_number || invoice.invoice_number) : invoice.invoice_number}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm text-gray-900 max-w-[150px] truncate">
                     {invoice.client_name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(invoice.date)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(isQuoteItem(invoice) ? invoice.expiry_date : invoice.due_date)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {formatCurrency(invoice.total)}
                   </td>
                   {viewType !== 'quotes' && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-sm font-medium">
                       {isQuoteItem(invoice) ? (
                         <span className="text-gray-400">—</span>
                       ) : (() => {
@@ -711,23 +711,23 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                       })()}
                     </td>
                   )}
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(invoice.status)}`}>
                       {invoice.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
+                  <td className="px-3 lg:px-4 py-3 lg:py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end space-x-1.5">
                       <button
                         onClick={() => handleView(invoice)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded"
                         title="View"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleEdit(invoice)}
-                        className="text-gray-600 hover:text-gray-900"
+                        className="text-gray-600 hover:text-gray-900 p-1 hover:bg-gray-100 rounded"
                         title="Edit"
                       >
                         <Edit className="w-4 h-4" />
@@ -735,7 +735,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                       {(isQuoteItem(invoice) && !invoice.converted_to_invoice_id) && (
                         <button
                           onClick={() => handleConvertToInvoice(invoice.id)}
-                          className="text-green-600 hover:text-green-900"
+                          className="text-green-600 hover:text-green-900 p-1 hover:bg-green-50 rounded"
                           title="Convert to Invoice"
                         >
                           <ArrowRight className="w-4 h-4" />
@@ -743,14 +743,14 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                       )}
                       <button
                         onClick={() => handleArchive(invoice.id, invoice)}
-                        className="text-yellow-600 hover:text-yellow-900"
+                        className="text-yellow-600 hover:text-yellow-900 p-1 hover:bg-yellow-50 rounded"
                         title="Archive"
                       >
                         <Archive className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(invoice.id, invoice)}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
