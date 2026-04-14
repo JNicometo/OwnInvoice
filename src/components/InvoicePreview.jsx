@@ -83,12 +83,22 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
   };
 
   const handlePrint = async () => {
-    // Add print class to body and trigger print
-    document.body.classList.add('printing');
-    setTimeout(() => {
-      window.print();
-      document.body.classList.remove('printing');
-    }, 100);
+    // Use the same HTML template as PDF download for consistent output
+    const html = await generateInvoiceHTML();
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.left = '-9999px';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    document.body.appendChild(printFrame);
+    printFrame.contentDocument.open();
+    printFrame.contentDocument.write(html);
+    printFrame.contentDocument.close();
+    printFrame.onload = () => {
+      printFrame.contentWindow.focus();
+      printFrame.contentWindow.print();
+      setTimeout(() => document.body.removeChild(printFrame), 1000);
+    };
   };
 
   const generateInvoiceHTML = async () => {
@@ -507,7 +517,7 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
             ` : ''}
             ${(settings?.show_tax_on_invoice ?? 1) ? `
             <div class="t-row">
-              <span class="t-label">Tax (${settings?.tax_rate || 0}%)</span>
+              <span class="t-label">Tax (${fullInvoice?.tax_rate != null ? fullInvoice.tax_rate : (settings?.tax_rate || 0)}%)</span>
               <span class="t-val">${formatCurrency(fullInvoice?.tax || 0)}</span>
             </div>
             ` : ''}
@@ -1864,7 +1874,7 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
               )}
               {(settings?.show_tax_on_invoice ?? 1) && (
                 <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
-                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Tax ({settings?.tax_rate || 0}%)</span>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Tax ({fullInvoice?.tax_rate != null ? fullInvoice.tax_rate : (settings?.tax_rate || 0)}%)</span>
                   <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullInvoice.tax)}</span>
                 </div>
               )}

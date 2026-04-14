@@ -2814,6 +2814,52 @@ function Settings({ isLicensed, onLicenseChange }) {
                         </div>
                         <p className="text-xs text-gray-500 mt-1">Invoice borders and highlights</p>
                       </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Invoice Text Color
+                        </label>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="color"
+                            name="text_primary_color"
+                            value={formData.text_primary_color}
+                            onChange={handleInputChange}
+                            className="w-14 h-10 rounded border border-gray-300 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={formData.text_primary_color}
+                            onChange={(e) => setFormData(prev => ({ ...prev, text_primary_color: e.target.value }))}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                            placeholder="#111827"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Main body text on invoices</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Invoice Secondary Text
+                        </label>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="color"
+                            name="text_secondary_color"
+                            value={formData.text_secondary_color}
+                            onChange={handleInputChange}
+                            className="w-14 h-10 rounded border border-gray-300 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={formData.text_secondary_color}
+                            onChange={(e) => setFormData(prev => ({ ...prev, text_secondary_color: e.target.value }))}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg font-mono text-sm"
+                            placeholder="#6B7280"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Labels and secondary info on invoices</p>
+                      </div>
                     </div>
                   </div>
 

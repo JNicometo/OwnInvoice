@@ -83,6 +83,7 @@ function QuoteForm({ quote, onClose }) {
     status: 'draft',
     notes: '',
     terms: '',
+    tax_rate: '',
     discount_type: 'none',
     discount_value: 0,
     shipping: 0,
@@ -171,6 +172,7 @@ function QuoteForm({ quote, onClose }) {
             status: fullQuote.status,
             notes: fullQuote.notes || '',
             terms: fullQuote.terms || '',
+            tax_rate: fullQuote.tax_rate != null ? fullQuote.tax_rate : '',
             discount_type: fullQuote.discount_type || 'none',
             discount_value: fullQuote.discount_value || 0,
             shipping: fullQuote.shipping || 0,
@@ -239,7 +241,10 @@ function QuoteForm({ quote, onClose }) {
 
     // Calculate tax on (subtotal - discount + shipping)
     const taxableAmount = afterDiscount + shipping;
-    const taxRate = parseFloat(settings?.tax_rate || 0) / 100;
+    const effectiveTaxRate = formData.tax_rate !== '' && formData.tax_rate != null
+      ? parseFloat(formData.tax_rate)
+      : parseFloat(settings?.tax_rate || 0);
+    const taxRate = effectiveTaxRate / 100;
     const tax = taxableAmount * taxRate;
 
     // Add adjustment (can be positive or negative)
@@ -365,18 +370,6 @@ function QuoteForm({ quote, onClose }) {
         newItems[index].rate = savedItem.rate;
         newItems[index].amount = calculateItemAmount(newItems[index]);
         setItems(newItems);
-      } else {
-        // Item not found and has description - offer to save as new item
-        if (items[index].description && items[index].description.trim()) {
-          setPendingItemNumber(itemNumber.trim());
-          setNewItemData({
-            sku: itemNumber.trim(),
-            description: items[index].description,
-            rate: parseFloat(items[index].rate) || 0,
-            category: 'General'
-          });
-          setShowCreateItemModal(true);
-        }
       }
     } catch (error) {
       console.error('Error searching for item:', error);
@@ -454,11 +447,15 @@ function QuoteForm({ quote, onClose }) {
       }
 
       const totals = calculateTotals();
+      const effectiveTaxRate = formData.tax_rate !== '' && formData.tax_rate != null
+        ? parseFloat(formData.tax_rate)
+        : parseFloat(settings?.tax_rate || 0);
       const quoteData = {
         ...formData,
         quote_number: quoteNumber,
         subtotal: totals.subtotal,
         tax: totals.tax,
+        tax_rate: effectiveTaxRate,
         discount_type: formData.discount_type || 'none',
         discount_value: parseFloat(formData.discount_value || 0),
         discount_amount: totals.quoteDiscount,
@@ -833,8 +830,20 @@ function QuoteForm({ quote, onClose }) {
                     </div>
                   </div>
 
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Tax ({settings?.tax_rate || 0}%):</span>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-1">
+                      <span className="text-gray-600">Tax (</span>
+                      <input
+                        type="number"
+                        value={formData.tax_rate !== '' && formData.tax_rate != null ? formData.tax_rate : (settings?.tax_rate || 0)}
+                        onChange={(e) => setFormData(prev => ({ ...prev, tax_rate: e.target.value }))}
+                        className="w-16 px-1 py-0.5 border border-gray-300 rounded text-sm text-center"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                      />
+                      <span className="text-gray-600">%):</span>
+                    </div>
                     <span className="font-medium">${totals.tax.toFixed(2)}</span>
                   </div>
 

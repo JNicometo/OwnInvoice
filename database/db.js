@@ -367,6 +367,22 @@ const runMigrations = () => {
       console.log('✓ Type column already exists in invoices table');
     }
 
+    // Add tax_rate column to invoices table to store the rate used at invoice time
+    const invoiceColsForTaxRate = db.pragma('table_info(invoices)').map(c => c.name);
+    if (!invoiceColsForTaxRate.includes('tax_rate')) {
+      console.log('Adding tax_rate column to invoices table...');
+      db.exec("ALTER TABLE invoices ADD COLUMN tax_rate REAL DEFAULT NULL");
+      console.log('✓ Added tax_rate column to invoices table');
+    }
+
+    // Add tax_rate column to quotes table
+    const quoteColsForTaxRate = db.pragma('table_info(quotes)').map(c => c.name);
+    if (!quoteColsForTaxRate.includes('tax_rate')) {
+      console.log('Adding tax_rate column to quotes table...');
+      db.exec("ALTER TABLE quotes ADD COLUMN tax_rate REAL DEFAULT NULL");
+      console.log('✓ Added tax_rate column to quotes table');
+    }
+
     // Add client snapshot columns to quotes table
     console.log('Checking for quote client snapshot columns...');
     const quoteColumns = db.pragma('table_info(quotes)');
@@ -1854,12 +1870,12 @@ const createInvoice = (invoice, items) => {
   const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(invoice.client_id);
 
   const invoiceStmt = db.prepare(`
-    INSERT INTO invoices (invoice_number, client_id, created_from_quote_id, date, due_date, status, type, subtotal, tax,
+    INSERT INTO invoices (invoice_number, client_id, created_from_quote_id, date, due_date, status, type, subtotal, tax, tax_rate,
       discount_type, discount_value, discount_amount, shipping, adjustment, adjustment_label,
       total, notes, payment_terms, client_name, client_email, client_phone, client_address,
       client_city, client_state, client_zip,
       shipping_address, shipping_city, shipping_state, shipping_zip, show_shipping_address)
-    VALUES (@invoice_number, @client_id, @created_from_quote_id, @date, @due_date, @status, @type, @subtotal, @tax,
+    VALUES (@invoice_number, @client_id, @created_from_quote_id, @date, @due_date, @status, @type, @subtotal, @tax, @tax_rate,
       @discount_type, @discount_value, @discount_amount, @shipping, @adjustment, @adjustment_label,
       @total, @notes, @payment_terms, @client_name, @client_email, @client_phone, @client_address,
       @client_city, @client_state, @client_zip,
@@ -1871,6 +1887,7 @@ const createInvoice = (invoice, items) => {
     ...invoice,
     status: invoice.status || 'draft', // Default to 'draft' if not specified
     type: invoice.type || 'invoice', // Default to 'invoice' if not specified
+    tax_rate: invoice.tax_rate != null && invoice.tax_rate !== '' ? parseFloat(invoice.tax_rate) : null,
     client_name: client?.name || '',
     client_email: client?.email || '',
     client_phone: client?.phone || '',
@@ -1928,6 +1945,7 @@ const updateInvoice = (id, invoice, items) => {
       type = @type,
       subtotal = @subtotal,
       tax = @tax,
+      tax_rate = @tax_rate,
       discount_type = @discount_type,
       discount_value = @discount_value,
       discount_amount = @discount_amount,
@@ -1956,6 +1974,7 @@ const updateInvoice = (id, invoice, items) => {
     invoiceStmt.run({
       ...invoice,
       id,
+      tax_rate: invoice.tax_rate != null && invoice.tax_rate !== '' ? parseFloat(invoice.tax_rate) : null,
       shipping_address: invoice.shipping_address || '',
       shipping_city: invoice.shipping_city || '',
       shipping_state: invoice.shipping_state || '',
@@ -2106,7 +2125,19 @@ const createSavedItem = (item) => {
       @taxable, @is_active, @notes
     )
   `);
-  return stmt.run(item);
+  return stmt.run({
+    description: item.description || '',
+    rate: parseFloat(item.rate) || 0,
+    category: item.category || 'General',
+    sku: item.sku || '',
+    barcode: item.barcode || '',
+    unit_of_measure: item.unit_of_measure || 'Each',
+    cost_price: parseFloat(item.cost_price) || 0,
+    markup_percentage: parseFloat(item.markup_percentage) || 0,
+    taxable: item.taxable !== undefined ? item.taxable : 1,
+    is_active: item.is_active !== undefined ? item.is_active : 1,
+    notes: item.notes || ''
+  });
 };
 
 const updateSavedItem = (id, item) => {
@@ -2563,11 +2594,11 @@ const createQuote = (quote, items) => {
   const client = db.prepare('SELECT * FROM clients WHERE id = ?').get(quote.client_id);
 
   const quoteStmt = db.prepare(`
-    INSERT INTO quotes (quote_number, client_id, date, expiry_date, status, subtotal, tax,
+    INSERT INTO quotes (quote_number, client_id, date, expiry_date, status, subtotal, tax, tax_rate,
       discount_type, discount_value, discount_amount, shipping, adjustment, adjustment_label,
       total, notes, terms, client_name, client_email, client_phone, client_address,
       client_city, client_state, client_zip)
-    VALUES (@quote_number, @client_id, @date, @expiry_date, @status, @subtotal, @tax,
+    VALUES (@quote_number, @client_id, @date, @expiry_date, @status, @subtotal, @tax, @tax_rate,
       @discount_type, @discount_value, @discount_amount, @shipping, @adjustment, @adjustment_label,
       @total, @notes, @terms, @client_name, @client_email, @client_phone, @client_address,
       @client_city, @client_state, @client_zip)
@@ -2576,6 +2607,7 @@ const createQuote = (quote, items) => {
   // Add client snapshot to quote data
   const quoteWithClient = {
     ...quote,
+    tax_rate: quote.tax_rate != null && quote.tax_rate !== '' ? parseFloat(quote.tax_rate) : null,
     client_name: client?.name || '',
     client_email: client?.email || '',
     client_phone: client?.phone || '',
@@ -2666,6 +2698,7 @@ const updateQuote = (id, quote, items) => {
       status = @status,
       subtotal = @subtotal,
       tax = @tax,
+      tax_rate = @tax_rate,
       discount_type = @discount_type,
       discount_value = @discount_value,
       discount_amount = @discount_amount,
@@ -2686,7 +2719,7 @@ const updateQuote = (id, quote, items) => {
   `);
 
   const transaction = db.transaction((id, quote, items) => {
-    quoteStmt.run({ ...quote, id });
+    quoteStmt.run({ ...quote, id, tax_rate: quote.tax_rate != null && quote.tax_rate !== '' ? parseFloat(quote.tax_rate) : null });
     deleteItemsStmt.run(id);
 
     for (const item of items) {

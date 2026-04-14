@@ -120,6 +120,7 @@ function InvoiceForm({ invoice, onClose }) {
             type: fullInvoice.type || 'invoice',
             notes: fullInvoice.notes || '',
             payment_terms: fullInvoice.payment_terms || '',
+            tax_rate: fullInvoice.tax_rate != null ? fullInvoice.tax_rate : '',
             discount_type: fullInvoice.discount_type || 'none',
             discount_value: fullInvoice.discount_value || 0,
             shipping: fullInvoice.shipping || 0,
@@ -167,8 +168,10 @@ function InvoiceForm({ invoice, onClose }) {
       const selectedClient = clients.find(c => c.id === parseInt(formData.client_id));
       if (selectedClient) {
         const updates = {};
-        // Set per-client tax rate if available
-        updates.tax_rate = selectedClient.tax_rate != null ? selectedClient.tax_rate : '';
+        // Only set per-client tax rate for new invoices (don't overwrite stored rate when editing)
+        if (!isEdit) {
+          updates.tax_rate = selectedClient.tax_rate != null ? selectedClient.tax_rate : '';
+        }
         // Adjust due date based on client payment terms (only for new invoices)
         if (!isEdit) {
           const clientTerms = selectedClient.payment_terms || '';
@@ -179,14 +182,18 @@ function InvoiceForm({ invoice, onClose }) {
             updates.due_date = calculateDueDate(formData.date, days);
           }
         }
-        setFormData(prev => ({ ...prev, ...updates }));
-      } else {
+        if (Object.keys(updates).length > 0) {
+          setFormData(prev => ({ ...prev, ...updates }));
+        }
+      } else if (!isEdit) {
         setFormData(prev => ({ ...prev, tax_rate: '' }));
       }
     } else {
       setClientAddresses([]);
       setSelectedAddressId(null);
-      setFormData(prev => ({ ...prev, tax_rate: '' }));
+      if (!isEdit) {
+        setFormData(prev => ({ ...prev, tax_rate: '' }));
+      }
     }
   }, [formData.client_id]);
 
@@ -530,19 +537,6 @@ function InvoiceForm({ invoice, onClose }) {
         newItems[index].rate = savedItem.rate;
         newItems[index].amount = calculateItemAmount(newItems[index]);
         setItems(newItems);
-      } else {
-        // Item not found and has description - offer to save as new item
-        if (items[index].description && items[index].description.trim()) {
-          setPendingItemNumber(itemNumber.trim());
-          setPendingItemIndex(index);
-          setNewItemData({
-            sku: itemNumber.trim(),
-            description: items[index].description,
-            rate: parseFloat(items[index].rate) || 0,
-            category: 'General'
-          });
-          setShowCreateItemModal(true);
-        }
       }
     } catch (error) {
       console.error('Error searching for item:', error);
@@ -612,12 +606,18 @@ function InvoiceForm({ invoice, onClose }) {
 
       const totals = calculateTotals();
 
+      // Resolve the effective tax rate (user-entered or settings default)
+      const effectiveTaxRate = formData.tax_rate !== '' && formData.tax_rate != null
+        ? parseFloat(formData.tax_rate)
+        : parseFloat(settings?.tax_rate || 0);
+
       const invoiceData = {
         ...formData,
         invoice_number: invoiceNumber,
         created_from_quote_id: formData.created_from_quote_id || null,
         subtotal: totals.subtotal,
         tax: totals.tax,
+        tax_rate: effectiveTaxRate,
         discount_type: formData.discount_type || 'none',
         discount_value: parseFloat(formData.discount_value || 0),
         discount_amount: totals.invoiceDiscount,

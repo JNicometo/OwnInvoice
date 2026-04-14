@@ -42,13 +42,23 @@ function QuotePreview({ quote, onClose, onEdit }) {
     loadQuoteData();
   }, [loadQuoteData]);
 
-  const handlePrint = () => {
-    // Add print class to body and trigger print
-    document.body.classList.add('printing');
-    setTimeout(() => {
-      window.print();
-      document.body.classList.remove('printing');
-    }, 100);
+  const handlePrint = async () => {
+    // Use the same HTML template as PDF download for consistent output
+    const html = generateQuoteHTML();
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.left = '-9999px';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    document.body.appendChild(printFrame);
+    printFrame.contentDocument.open();
+    printFrame.contentDocument.write(html);
+    printFrame.contentDocument.close();
+    printFrame.onload = () => {
+      printFrame.contentWindow.focus();
+      printFrame.contentWindow.print();
+      setTimeout(() => document.body.removeChild(printFrame), 1000);
+    };
   };
 
   const generateQuoteHTML = () => {
@@ -318,7 +328,7 @@ function QuotePreview({ quote, onClose, onEdit }) {
         </style>
       </head>
       <body>
-        <div class="accent-line"></div>
+        ${(settings?.show_accent_bar_on_invoice ?? 1) ? '<div class="accent-line"></div>' : ''}
 
         <div class="header">
           <div>
@@ -347,9 +357,9 @@ function QuotePreview({ quote, onClose, onEdit }) {
           <div class="client-col">
             <div class="col-label">Prepared For</div>
             <div class="col-name">${fullQuote?.client_name || 'Client Name'}</div>
-            ${fullQuote?.client_email ? `<div class="col-line">${fullQuote.client_email}</div>` : ''}
-            ${fullQuote?.client_phone ? `<div class="col-line">${fullQuote.client_phone}</div>` : ''}
-            ${(() => {
+            ${settings?.show_client_email_on_invoice && fullQuote?.client_email ? `<div class="col-line">${fullQuote.client_email}</div>` : ''}
+            ${settings?.show_client_phone_on_invoice && fullQuote?.client_phone ? `<div class="col-line">${fullQuote.client_phone}</div>` : ''}
+            ${(settings?.show_client_billing_address_on_invoice ?? 1) ? (() => {
               const addr = fullQuote?.billing_address || fullQuote?.client_address;
               const city = fullQuote?.billing_city || fullQuote?.client_city;
               const state = fullQuote?.billing_state || fullQuote?.client_state;
@@ -358,10 +368,10 @@ function QuotePreview({ quote, onClose, onEdit }) {
                 <div class="col-line">${addr}</div>
                 ${city ? `<div class="col-line">${city}${state ? ', ' + state : ''} ${zip || ''}</div>` : ''}
               ` : '';
-            })()}
-            ${fullQuote?.tax_id ? `<div class="col-line muted">Tax ID: ${fullQuote.tax_id}</div>` : ''}
+            })() : ''}
+            ${settings?.show_client_tax_id_on_invoice && fullQuote?.tax_id ? `<div class="col-line muted">Tax ID: ${fullQuote.tax_id}</div>` : ''}
           </div>
-          ${fullQuote?.shipping_address ? `
+          ${((settings?.show_client_shipping_address_on_invoice ?? 1) && fullQuote?.shipping_address) ? `
           <div class="client-col">
             <div class="col-label">Ship To</div>
             <div class="col-line">${fullQuote.shipping_address}</div>
@@ -374,10 +384,12 @@ function QuotePreview({ quote, onClose, onEdit }) {
               <span class="dt">Quote Date</span>
               <span class="dd">${formatDate(fullQuote?.date || '')}</span>
             </div>
+            ${(settings?.show_due_date_on_invoice ?? 1) ? `
             <div class="detail-item">
               <span class="dt">Valid Until</span>
               <span class="dd">${formatDate(fullQuote?.expiry_date || '')}</span>
             </div>
+            ` : ''}
             ${settings?.show_customer_numbers && fullQuote?.customer_number ? `
             <div class="detail-item">
               <span class="dt">Customer #</span>
@@ -395,9 +407,9 @@ function QuotePreview({ quote, onClose, onEdit }) {
               <tr>
                 ${settings?.show_item_sku_on_invoice ? '<th style="width:72px">SKU</th>' : ''}
                 <th>Description</th>
-                <th class="c" style="width:48px">Qty</th>
+                ${(settings?.show_item_quantity_on_invoice ?? 1) ? '<th class="c" style="width:48px">Qty</th>' : ''}
                 ${settings?.show_item_unit_on_invoice ? '<th class="c" style="width:56px">Unit</th>' : ''}
-                <th class="r" style="width:88px">Rate</th>
+                ${(settings?.show_item_rate_on_invoice ?? 1) ? '<th class="r" style="width:88px">Rate</th>' : ''}
                 <th class="r" style="width:96px">Amount</th>
               </tr>
             </thead>
@@ -406,9 +418,9 @@ function QuotePreview({ quote, onClose, onEdit }) {
                 <tr>
                   ${settings?.show_item_sku_on_invoice ? `<td class="sku-cell">${item.sku || '-'}</td>` : ''}
                   <td><div class="desc-main">${item.description}</div></td>
-                  <td class="c">${item.quantity}</td>
+                  ${(settings?.show_item_quantity_on_invoice ?? 1) ? `<td class="c">${item.quantity}</td>` : ''}
                   ${settings?.show_item_unit_on_invoice ? `<td class="c">${item.unit_of_measure || 'Each'}</td>` : ''}
-                  <td class="r">${formatCurrency(item.rate)}</td>
+                  ${(settings?.show_item_rate_on_invoice ?? 1) ? `<td class="r">${formatCurrency(item.rate)}</td>` : ''}
                   <td class="r amount">${formatCurrency(item.amount)}</td>
                 </tr>
               `).join('')}
@@ -418,10 +430,12 @@ function QuotePreview({ quote, onClose, onEdit }) {
 
         <div class="totals-area">
           <div class="totals-stack">
+            ${(settings?.show_subtotal_on_invoice ?? 1) ? `
             <div class="t-row">
               <span class="t-label">Subtotal</span>
               <span class="t-val">${formatCurrency(fullQuote?.subtotal || 0)}</span>
             </div>
+            ` : ''}
             ${fullQuote?.discount_amount ? `
             <div class="t-row">
               <span class="t-label">Discount${fullQuote.discount_type === 'percentage' ? ` (${fullQuote.discount_value}%)` : ''}</span>
@@ -434,10 +448,12 @@ function QuotePreview({ quote, onClose, onEdit }) {
               <span class="t-val">${formatCurrency(fullQuote.shipping)}</span>
             </div>
             ` : ''}
+            ${(settings?.show_tax_on_invoice ?? 1) ? `
             <div class="t-row">
-              <span class="t-label">Tax (${settings?.tax_rate || 0}%)</span>
+              <span class="t-label">Tax (${fullQuote?.tax_rate != null ? fullQuote.tax_rate : (settings?.tax_rate || 0)}%)</span>
               <span class="t-val">${formatCurrency(fullQuote?.tax || 0)}</span>
             </div>
+            ` : ''}
             ${fullQuote?.adjustment ? `
             <div class="t-row">
               <span class="t-label">${fullQuote.adjustment_label || 'Adjustment'}</span>
@@ -453,7 +469,7 @@ function QuotePreview({ quote, onClose, onEdit }) {
         </div>
 
         <div class="bottom-row">
-          ${fullQuote?.notes ? `
+          ${(fullQuote?.notes && (settings?.show_notes_on_invoice ?? 1)) ? `
           <div class="bottom-item">
             <h4>Notes</h4>
             <p>${fullQuote.notes}</p>
@@ -465,7 +481,7 @@ function QuotePreview({ quote, onClose, onEdit }) {
             <p>${fullQuote.terms}</p>
           </div>
           ` : ''}
-          ${settings?.bank_details ? `
+          ${(settings?.bank_details && (settings?.show_bank_details_on_invoice ?? 1)) ? `
           <div class="bottom-item">
             <h4>Bank Details</h4>
             <p>${settings.bank_details}</p>
@@ -473,10 +489,12 @@ function QuotePreview({ quote, onClose, onEdit }) {
           ` : ''}
         </div>
 
+        ${(settings?.show_footer_on_invoice ?? 1) ? `
         <div class="footer">
-          <div class="footer-thank">Thank you for considering this quote!</div>
+          <div class="footer-thank">${settings?.invoice_footer || 'Thank you for considering this quote!'}</div>
           <div class="footer-info">${settings?.company_name || 'Your Company'}${settings?.company_email ? ` &middot; ${settings.company_email}` : ''}${settings?.company_website ? ` &middot; ${settings.company_website}` : ''}</div>
         </div>
+        ` : ''}
       </body>
       </html>
     `;
@@ -628,7 +646,9 @@ function QuotePreview({ quote, onClose, onEdit }) {
         {/* Quote Document - On-screen preview matching PDF design */}
         <div className="invoice-doc bg-white shadow-lg overflow-hidden rounded-lg" style={{ fontFamily: settings?.body_font || 'Segoe UI, system-ui, sans-serif' }}>
           {/* Accent line */}
-          <div style={{ height: '4px', background: `linear-gradient(90deg, ${settings?.invoice_accent_color || '#2563eb'} 0%, #7c3aed 100%)` }} />
+          {(settings?.show_accent_bar_on_invoice ?? 1) && (
+            <div style={{ height: '4px', background: `linear-gradient(90deg, ${settings?.invoice_accent_color || '#2563eb'} 0%, #7c3aed 100%)` }} />
+          )}
 
           {/* Header */}
           <div className="flex justify-between items-start" style={{ padding: '32px 40px 24px' }}>
@@ -661,9 +681,9 @@ function QuotePreview({ quote, onClose, onEdit }) {
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.2px', color: settings?.invoice_accent_color || '#2563eb', marginBottom: '6px' }}>Prepared For</div>
               <div style={{ fontSize: '13px', fontWeight: 600, color: settings?.invoice_header_color || '#0f172a', marginBottom: '2px' }}>{fullQuote.client_name}</div>
-              {fullQuote.client_email && <div style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b' }}>{fullQuote.client_email}</div>}
-              {fullQuote.client_phone && <div style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b' }}>{fullQuote.client_phone}</div>}
-              {(() => {
+              {settings?.show_client_email_on_invoice && fullQuote.client_email && <div style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b' }}>{fullQuote.client_email}</div>}
+              {settings?.show_client_phone_on_invoice && fullQuote.client_phone && <div style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b' }}>{fullQuote.client_phone}</div>}
+              {(settings?.show_client_billing_address_on_invoice ?? 1) && (() => {
                 const addr = fullQuote.billing_address || fullQuote.client_address;
                 const city = fullQuote.billing_city || fullQuote.client_city;
                 const state = fullQuote.billing_state || fullQuote.client_state;
@@ -675,10 +695,10 @@ function QuotePreview({ quote, onClose, onEdit }) {
                   </>
                 ) : null;
               })()}
-              {fullQuote.tax_id && <div style={{ fontSize: '10px', color: '#94a3b8', fontStyle: 'italic' }}>Tax ID: {fullQuote.tax_id}</div>}
+              {settings?.show_client_tax_id_on_invoice && fullQuote.tax_id && <div style={{ fontSize: '10px', color: '#94a3b8', fontStyle: 'italic' }}>Tax ID: {fullQuote.tax_id}</div>}
             </div>
 
-            {fullQuote.shipping_address && (
+            {(settings?.show_client_shipping_address_on_invoice ?? 1) && fullQuote.shipping_address && (
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.2px', color: settings?.invoice_accent_color || '#2563eb', marginBottom: '6px' }}>Ship To</div>
                 <div style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b' }}>{fullQuote.shipping_address}</div>
@@ -692,26 +712,30 @@ function QuotePreview({ quote, onClose, onEdit }) {
                 <span style={{ color: '#94a3b8', fontWeight: 500 }}>Quote Date</span>
                 <span style={{ color: settings?.text_primary_color || '#1e293b', fontWeight: 600 }}>{formatDate(fullQuote.date)}</span>
               </div>
-              <div className="flex justify-between" style={{ padding: '4px 0', fontSize: '11px' }}>
-                <span style={{ color: '#94a3b8', fontWeight: 500 }}>Valid Until</span>
-                <span style={{ color: settings?.text_primary_color || '#1e293b', fontWeight: 600 }}>{formatDate(fullQuote.expiry_date)}</span>
-              </div>
+              {(settings?.show_due_date_on_invoice ?? 1) && (
+                <div className="flex justify-between" style={{ padding: '4px 0', fontSize: '11px' }}>
+                  <span style={{ color: '#94a3b8', fontWeight: 500 }}>Valid Until</span>
+                  <span style={{ color: settings?.text_primary_color || '#1e293b', fontWeight: 600 }}>{formatDate(fullQuote.expiry_date)}</span>
+                </div>
+              )}
               {settings?.show_customer_numbers && fullQuote.customer_number && (
                 <div className="flex justify-between" style={{ padding: '4px 0', fontSize: '11px' }}>
                   <span style={{ color: '#94a3b8', fontWeight: 500 }}>Customer #</span>
                   <span style={{ color: settings?.text_primary_color || '#1e293b', fontWeight: 600 }}>{fullQuote.customer_number}</span>
                 </div>
               )}
-              <div className="flex justify-between" style={{ padding: '4px 0', fontSize: '11px' }}>
-                <span style={{ color: '#94a3b8', fontWeight: 500 }}>Status</span>
-                <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                  fullQuote.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                  fullQuote.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  fullQuote.status === 'expired' ? 'bg-red-100 text-red-800' :
-                  fullQuote.status === 'declined' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>{fullQuote.status?.toUpperCase()}</span>
-              </div>
+              {(settings?.show_status_on_invoice ?? 1) && (
+                <div className="flex justify-between" style={{ padding: '4px 0', fontSize: '11px' }}>
+                  <span style={{ color: '#94a3b8', fontWeight: 500 }}>Status</span>
+                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                    fullQuote.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                    fullQuote.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    fullQuote.status === 'expired' ? 'bg-red-100 text-red-800' :
+                    fullQuote.status === 'declined' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>{fullQuote.status?.toUpperCase()}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -724,9 +748,9 @@ function QuotePreview({ quote, onClose, onEdit }) {
                 <tr>
                   {settings?.show_item_sku_on_invoice && <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'left', width: '72px' }}>SKU</th>}
                   <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'left' }}>Description</th>
-                  <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'center', width: '48px' }}>Qty</th>
+                  {(settings?.show_item_quantity_on_invoice ?? 1) && <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'center', width: '48px' }}>Qty</th>}
                   {settings?.show_item_unit_on_invoice && <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'center', width: '56px' }}>Unit</th>}
-                  <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'right', width: '88px' }}>Rate</th>
+                  {(settings?.show_item_rate_on_invoice ?? 1) && <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'right', width: '88px' }}>Rate</th>}
                   <th style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: settings?.text_secondary_color || '#64748b', padding: '10px 12px', borderBottom: `2px solid ${settings?.invoice_accent_color || '#2563eb'}`, textAlign: 'right', width: '96px' }}>Amount</th>
                 </tr>
               </thead>
@@ -735,9 +759,9 @@ function QuotePreview({ quote, onClose, onEdit }) {
                   <tr key={index}>
                     {settings?.show_item_sku_on_invoice && <td style={{ padding: '10px 12px', fontSize: '10px', color: settings?.text_secondary_color || '#64748b', borderBottom: '1px solid #f1f5f9', fontFamily: 'SF Mono, Consolas, monospace', whiteSpace: 'nowrap', verticalAlign: 'top' }}>{item.sku || '-'}</td>}
                     <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.invoice_header_color || '#0f172a', borderBottom: '1px solid #f1f5f9', fontWeight: 500, verticalAlign: 'top' }}>{item.description}</td>
-                    <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.text_primary_color || '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'center', verticalAlign: 'top' }}>{item.quantity}</td>
+                    {(settings?.show_item_quantity_on_invoice ?? 1) && <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.text_primary_color || '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'center', verticalAlign: 'top' }}>{item.quantity}</td>}
                     {settings?.show_item_unit_on_invoice && <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.text_primary_color || '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'center', verticalAlign: 'top' }}>{item.unit_of_measure || 'Each'}</td>}
-                    <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.text_primary_color || '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'right', fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{formatCurrency(item.rate)}</td>
+                    {(settings?.show_item_rate_on_invoice ?? 1) && <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.text_primary_color || '#1e293b', borderBottom: '1px solid #f1f5f9', textAlign: 'right', fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{formatCurrency(item.rate)}</td>}
                     <td style={{ padding: '10px 12px', fontSize: '11.5px', color: settings?.invoice_header_color || '#0f172a', borderBottom: '1px solid #f1f5f9', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', verticalAlign: 'top' }}>{formatCurrency(item.amount)}</td>
                   </tr>
                 ))}
@@ -748,10 +772,12 @@ function QuotePreview({ quote, onClose, onEdit }) {
           {/* Totals */}
           <div className="flex justify-end" style={{ padding: '12px 40px 0' }}>
             <div style={{ width: '260px' }}>
-              <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
-                <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Subtotal</span>
-                <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullQuote.subtotal)}</span>
-              </div>
+              {(settings?.show_subtotal_on_invoice ?? 1) && (
+                <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Subtotal</span>
+                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullQuote.subtotal)}</span>
+                </div>
+              )}
               {fullQuote.discount_amount > 0 && (
                 <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
                   <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Discount{fullQuote.discount_type === 'percentage' ? ` (${fullQuote.discount_value}%)` : ''}</span>
@@ -764,10 +790,12 @@ function QuotePreview({ quote, onClose, onEdit }) {
                   <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullQuote.shipping)}</span>
                 </div>
               )}
-              <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
-                <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Tax ({settings?.tax_rate || 0}%)</span>
-                <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullQuote.tax)}</span>
-              </div>
+              {(settings?.show_tax_on_invoice ?? 1) && (
+                <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
+                  <span style={{ color: settings?.text_secondary_color || '#64748b' }}>Tax ({fullQuote?.tax_rate != null ? fullQuote.tax_rate : (settings?.tax_rate || 0)}%)</span>
+                  <span style={{ fontWeight: 500, color: settings?.text_primary_color || '#1e293b', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(fullQuote.tax)}</span>
+                </div>
+              )}
               {fullQuote.adjustment !== 0 && fullQuote.adjustment != null && (
                 <div className="flex justify-between" style={{ padding: '6px 0', fontSize: '11.5px' }}>
                   <span style={{ color: settings?.text_secondary_color || '#64748b' }}>{fullQuote.adjustment_label || 'Adjustment'}</span>
@@ -784,7 +812,7 @@ function QuotePreview({ quote, onClose, onEdit }) {
 
           {/* Bottom row */}
           <div className="flex" style={{ gap: '16px', padding: '20px 40px 0' }}>
-            {fullQuote.notes && (
+            {(fullQuote.notes && (settings?.show_notes_on_invoice ?? 1)) && (
               <div style={{ flex: 1, minWidth: 0, paddingTop: '12px', borderTop: '2px solid #f1f5f9' }}>
                 <h4 style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: settings?.invoice_accent_color || '#2563eb', marginBottom: '5px' }}>Notes</h4>
                 <p style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{fullQuote.notes}</p>
@@ -796,7 +824,7 @@ function QuotePreview({ quote, onClose, onEdit }) {
                 <p style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{fullQuote.terms}</p>
               </div>
             )}
-            {settings?.bank_details && (
+            {(settings?.bank_details && (settings?.show_bank_details_on_invoice ?? 1)) && (
               <div style={{ flex: 1, minWidth: 0, paddingTop: '12px', borderTop: '2px solid #f1f5f9' }}>
                 <h4 style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: settings?.invoice_accent_color || '#2563eb', marginBottom: '5px' }}>Bank Details</h4>
                 <p style={{ fontSize: '11px', color: settings?.text_secondary_color || '#64748b', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{settings.bank_details}</p>
@@ -805,10 +833,12 @@ function QuotePreview({ quote, onClose, onEdit }) {
           </div>
 
           {/* Footer */}
-          <div style={{ margin: '22px 40px 0', padding: '16px 0 28px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: settings?.invoice_accent_color || '#2563eb', marginBottom: '2px' }}>Thank you for considering this quote!</div>
-            <div style={{ fontSize: '10px', color: '#94a3b8' }}>{settings?.company_name || 'Your Company'}{settings?.company_email && ` · ${settings.company_email}`}{settings?.company_website && ` · ${settings.company_website}`}</div>
-          </div>
+          {(settings?.show_footer_on_invoice ?? 1) && (
+            <div style={{ margin: '22px 40px 0', padding: '16px 0 28px', borderTop: '1px solid #e2e8f0', textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: settings?.invoice_accent_color || '#2563eb', marginBottom: '2px' }}>{settings?.invoice_footer || 'Thank you for considering this quote!'}</div>
+              <div style={{ fontSize: '10px', color: '#94a3b8' }}>{settings?.company_name || 'Your Company'}{settings?.company_email && ` · ${settings.company_email}`}{settings?.company_website && ` · ${settings.company_website}`}</div>
+            </div>
+          )}
         </div>
       </div>
     </div>
