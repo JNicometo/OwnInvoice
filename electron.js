@@ -15,6 +15,7 @@ const cron = require('node-cron');
 const Store = require('electron-store');
 const os = require('os');
 const crypto = require('crypto');
+const { machineIdSync } = require('node-machine-id');
 
 const jwt = require('jsonwebtoken');
 
@@ -246,28 +247,54 @@ async function validateLicenseOnStartup() {
 }
 
 /**
- * Generate a deterministic machine ID from hardware identifiers.
- * Uses hostname + platform + arch + MAC address, hashed with SHA-256.
+ * Generate a stable machine ID that survives macOS updates and network changes.
+ *
+ * Priority order:
+ * 1. Use the machine ID stored in the license store from first activation (most stable)
+ * 2. Use node-machine-id (hardware-based, survives most OS updates)
+ * 3. Fall back to a UUID stored in a file in the app's userData directory
+ *
+ * Normal macOS updates, WiFi changes, and system tweaks will NOT invalidate the license.
+ * Only a complete OS reinstall or hardware replacement should require reactivation.
  */
 function generateMachineId() {
-  const hostname = os.hostname();
-  const platform = os.platform();
-  const arch = os.arch();
-
-  let macAddress = 'no-mac';
-  const interfaces = os.networkInterfaces();
-  for (const [name, addrs] of Object.entries(interfaces)) {
-    for (const addr of addrs) {
-      if (!addr.internal && addr.mac && addr.mac !== '00:00:00:00:00:00') {
-        macAddress = addr.mac;
-        break;
-      }
-    }
-    if (macAddress !== 'no-mac') break;
+  // If we already have a stored machine ID from activation, always use that
+  const storedId = licenseStore.get('machineId');
+  if (storedId) {
+    return storedId;
   }
 
-  const raw = `${hostname}|${platform}|${arch}|${macAddress}`;
-  return crypto.createHash('sha256').update(raw).digest('hex').substring(0, 40);
+  // Try hardware-based ID first (stable across OS updates)
+  try {
+    const hwId = machineIdSync({ original: true });
+    if (hwId) {
+      return crypto.createHash('sha256').update(hwId).digest('hex').substring(0, 40);
+    }
+  } catch (err) {
+    console.log('Hardware machine ID unavailable, using fallback:', err.message);
+  }
+
+  // Fallback: persistent UUID file in app data directory
+  const fallbackPath = path.join(app.getPath('userData'), '.machine-id');
+  try {
+    if (fs.existsSync(fallbackPath)) {
+      return fs.readFileSync(fallbackPath, 'utf8').trim();
+    }
+  } catch (err) {
+    console.log('Could not read fallback machine ID file:', err.message);
+  }
+
+  // Generate and persist a new UUID-based ID
+  const newId = crypto.createHash('sha256')
+    .update(crypto.randomUUID())
+    .digest('hex')
+    .substring(0, 40);
+  try {
+    fs.writeFileSync(fallbackPath, newId, 'utf8');
+  } catch (err) {
+    console.log('Could not write fallback machine ID file:', err.message);
+  }
+  return newId;
 }
 
 let mainWindow;
