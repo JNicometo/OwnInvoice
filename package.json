@@ -70,6 +70,7 @@
   "build": {
     "extends": null,
     "npmRebuild": false,
+    "afterSign": "scripts/notarize.js",
     "appId": "com.gritsoftware.owninvoice",
     "productName": "OwnInvoice Desktop",
     "directories": {
