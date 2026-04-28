@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS clients (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   customer_number TEXT,
   name TEXT NOT NULL,
-  email TEXT NOT NULL,
+  email TEXT DEFAULT '',
   phone TEXT DEFAULT '',
   address TEXT DEFAULT '',
   city TEXT DEFAULT '',

@@ -240,6 +240,7 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
   const handlePreviewClose = async () => {
     setShowPreview(false);
     setSelectedInvoice(null);
+    await loadInvoices();
   };
 
   const handleToggleInvoice = async (id) => {
@@ -701,7 +702,9 @@ function InvoiceList({ selectedClientId, selectedStatusFilter, onClearFilter }) 
                       {isQuoteItem(invoice) ? (
                         <span className="text-gray-400">—</span>
                       ) : (() => {
-                        const balance = invoice.total - (invoice.amount_paid || 0) - (invoice.credits_applied || 0);
+                        const balance = invoice.status === 'paid'
+                          ? 0
+                          : invoice.total - (invoice.amount_paid || 0) - (invoice.credits_applied || 0);
                         const isFullyPaid = balance <= 0;
                         return (
                           <span className={isFullyPaid ? 'text-green-600' : 'text-red-600'}>

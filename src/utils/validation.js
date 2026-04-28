@@ -27,9 +27,7 @@ export const validateClient = (client) => {
     errors.name = 'Client name is required';
   }
 
-  if (!validateRequired(client.email)) {
-    errors.email = 'Email is required';
-  } else if (!validateEmail(client.email)) {
+  if (client.email && client.email.trim() && !validateEmail(client.email)) {
     errors.email = 'Invalid email format';
   }
 

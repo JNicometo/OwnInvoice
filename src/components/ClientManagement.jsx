@@ -429,7 +429,7 @@ function ClientManagement({ onNavigateToInvoices }) {
   };
 
   const validateCSVData = async (data) => {
-    const requiredFields = ['customer_number', 'name', 'email'];
+    const requiredFields = ['customer_number', 'name'];
     const errors = [];
     const validData = [];
 
@@ -458,9 +458,7 @@ function ClientManagement({ onNavigateToInvoices }) {
       if (!row.name || !row.name.trim()) {
         rowErrors.push('Name is required');
       }
-      if (!row.email || !row.email.trim()) {
-        rowErrors.push('Email is required');
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+      if (row.email && row.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
         rowErrors.push('Invalid email format');
       }
 
@@ -827,7 +825,7 @@ function ClientManagement({ onNavigateToInvoices }) {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email *
+                        Email
                       </label>
                       <input
                         type="email"
@@ -835,7 +833,7 @@ function ClientManagement({ onNavigateToInvoices }) {
                         value={formData.email}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
+                        placeholder="Optional - needed for emailing invoices"
                       />
                       {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                     </div>
@@ -1622,8 +1620,8 @@ function ClientManagement({ onNavigateToInvoices }) {
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h3 className="font-semibold text-blue-900 mb-2">CSV Format Requirements:</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Required columns: <code className="bg-blue-100 px-1">customer_number</code>, <code className="bg-blue-100 px-1">name</code>, <code className="bg-blue-100 px-1">email</code></li>
-                  <li>• Optional columns: phone, address, city, state, zip</li>
+                  <li>• Required columns: <code className="bg-blue-100 px-1">customer_number</code>, <code className="bg-blue-100 px-1">name</code></li>
+                  <li>• Optional columns: email, phone, address, city, state, zip</li>
                   <li>• First row must contain column headers</li>
                   <li>• Customer numbers must be unique</li>
                 </ul>

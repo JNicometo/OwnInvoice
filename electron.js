@@ -508,7 +508,6 @@ ipcMain.handle('db:createClient', async (event, client) => {
     enforceTrialLimit('clients');
     validateObject(client, 'Client data');
     validateNonEmpty(client.name, 'Client name');
-    validateNonEmpty(client.email, 'Client email');
     if (useSqlServer()) {
       const adapter = getDbAdapter();
       return await adapter.createClient(client);

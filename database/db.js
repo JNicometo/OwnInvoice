@@ -92,6 +92,37 @@ const runMigrations = () => {
       console.log('✓ customer_number column already exists');
     }
 
+    // Make client email optional (remove NOT NULL constraint)
+    const emailCol = clientColumns.find(col => col.name === 'email');
+    if (emailCol && emailCol.notnull === 1) {
+      console.log('Making client email optional...');
+      // Get all current column names to build a safe migration
+      const allClientCols = clientColumns.map(col => col.name);
+      const colList = allClientCols.join(', ');
+      // Build new CREATE TABLE with email as optional (DEFAULT '' instead of NOT NULL)
+      const colDefs = clientColumns.map(col => {
+        let def = `${col.name} ${col.type || 'TEXT'}`;
+        if (col.name === 'id') return 'id INTEGER PRIMARY KEY AUTOINCREMENT';
+        if (col.name === 'email') return "email TEXT DEFAULT ''";
+        if (col.name === 'name') return 'name TEXT NOT NULL';
+        if (col.dflt_value !== null) def += ` DEFAULT ${col.dflt_value}`;
+        return def;
+      }).join(',\n          ');
+      db.exec(`
+        CREATE TABLE clients_new (
+          ${colDefs}
+        );
+        INSERT INTO clients_new (${colList}) SELECT ${colList} FROM clients;
+        DROP TABLE clients;
+        ALTER TABLE clients_new RENAME TO clients;
+      `);
+      // Recreate indexes
+      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_customer_number ON clients(customer_number) WHERE customer_number IS NOT NULL');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email)');
+      db.exec('CREATE INDEX IF NOT EXISTS idx_clients_name ON clients(name)');
+      console.log('✓ Client email is now optional');
+    }
+
     // Check if item_number column exists in saved_items table
     const savedItemColumns = db.pragma('table_info(saved_items)');
     const hasItemNumber = savedItemColumns.some(col => col.name === 'item_number');
@@ -1227,7 +1258,7 @@ const createClient = (client) => {
   return stmt.run({
     customer_number: client.customer_number || null,
     name: client.name,
-    email: client.email,
+    email: client.email || '',
     phone: client.phone || '',
     address: client.address || '',
     city: client.city || '',
@@ -1317,7 +1348,7 @@ const updateClient = (id, client) => {
     id,
     customer_number: client.customer_number || null,
     name: client.name,
-    email: client.email,
+    email: client.email || '',
     phone: client.phone || '',
     address: client.address || '',
     city: client.city || '',
@@ -2189,7 +2220,7 @@ const getSavedItemBySku = (sku) => {
 // Trial limit counts
 const getInvoiceCount = () => {
   const db = getDatabase();
-  const result = db.prepare("SELECT COUNT(*) as count FROM invoices WHERE archived = 0 AND type = 'invoice'").get();
+  const result = db.prepare("SELECT COUNT(*) as count FROM invoices WHERE archived = 0").get();
   return result.count;
 };
 

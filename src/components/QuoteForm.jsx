@@ -328,8 +328,8 @@ function QuoteForm({ quote, onClose }) {
 
   const handleCreateCustomer = async () => {
     // Validate required fields
-    if (!newCustomerData.name || !newCustomerData.email) {
-      setFormError('Please fill in Name and Email (required fields)');
+    if (!newCustomerData.name) {
+      setFormError('Name is required');
       return;
     }
 
@@ -1052,15 +1052,14 @@ function QuoteForm({ quote, onClose }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email <span className="text-red-500">*</span>
+                      Email
                     </label>
                     <input
                       type="email"
                       value={newCustomerData.email}
                       onChange={(e) => setNewCustomerData({ ...newCustomerData, email: e.target.value })}
                       className="w-full px-4 py-2 border rounded-lg"
-                      placeholder="customer@example.com"
-                      required
+                      placeholder="Optional - needed for emailing quotes"
                     />
                   </div>
 

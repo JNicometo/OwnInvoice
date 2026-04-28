@@ -416,8 +416,8 @@ function InvoiceForm({ invoice, onClose }) {
   };
 
   const handleCreateCustomer = async () => {
-    if (!newCustomerData.name || !newCustomerData.email) {
-      setFormError('Name and email are required');
+    if (!newCustomerData.name) {
+      setFormError('Name is required');
       return;
     }
 
@@ -1367,15 +1367,14 @@ function InvoiceForm({ invoice, onClose }) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email <span className="text-red-500">*</span>
+                      Email
                     </label>
                     <input
                       type="email"
                       value={newCustomerData.email}
                       onChange={(e) => setNewCustomerData({ ...newCustomerData, email: e.target.value })}
                       className="w-full px-4 py-2 border rounded-lg"
-                      placeholder="customer@example.com"
-                      required
+                      placeholder="Optional - needed for emailing invoices"
                     />
                   </div>
 
