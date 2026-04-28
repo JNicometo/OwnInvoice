@@ -382,10 +382,8 @@ function App() {
     );
   }
 
-  // Show activation screen only if not licensed AND trial has expired
-  if (!isLicensed && trialStatus?.trialExpired) {
-    return <LicenseActivation onActivated={() => setIsLicensed(true)} />;
-  }
+  // No full-screen gate — trial banner + backend limits handle enforcement
+  // Users can always view their data; creating new items is blocked after trial expires
 
   const handleConfirmResponse = (result) => {
     confirmState.resolve(result);
