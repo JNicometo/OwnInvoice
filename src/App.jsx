@@ -382,8 +382,8 @@ function App() {
     );
   }
 
-  // Show activation screen if not licensed
-  if (!isLicensed) {
+  // Show activation screen only if not licensed AND trial has expired
+  if (!isLicensed && trialStatus?.trialExpired) {
     return <LicenseActivation onActivated={() => setIsLicensed(true)} />;
   }
 
