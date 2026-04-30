@@ -93,34 +93,35 @@ const runMigrations = () => {
     }
 
     // Make client email optional (remove NOT NULL constraint)
-    const emailCol = clientColumns.find(col => col.name === 'email');
-    if (emailCol && emailCol.notnull === 1) {
-      console.log('Making client email optional...');
-      // Get all current column names to build a safe migration
-      const allClientCols = clientColumns.map(col => col.name);
-      const colList = allClientCols.join(', ');
-      // Build new CREATE TABLE with email as optional (DEFAULT '' instead of NOT NULL)
-      const colDefs = clientColumns.map(col => {
-        let def = `${col.name} ${col.type || 'TEXT'}`;
-        if (col.name === 'id') return 'id INTEGER PRIMARY KEY AUTOINCREMENT';
-        if (col.name === 'email') return "email TEXT DEFAULT ''";
-        if (col.name === 'name') return 'name TEXT NOT NULL';
-        if (col.dflt_value !== null) def += ` DEFAULT ${col.dflt_value}`;
-        return def;
-      }).join(',\n          ');
-      db.exec(`
-        CREATE TABLE clients_new (
-          ${colDefs}
-        );
-        INSERT INTO clients_new (${colList}) SELECT ${colList} FROM clients;
-        DROP TABLE clients;
-        ALTER TABLE clients_new RENAME TO clients;
-      `);
-      // Recreate indexes
-      db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_customer_number ON clients(customer_number) WHERE customer_number IS NOT NULL');
-      db.exec('CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email)');
-      db.exec('CREATE INDEX IF NOT EXISTS idx_clients_name ON clients(name)');
-      console.log('✓ Client email is now optional');
+    try {
+      const emailCol = clientColumns.find(col => col.name === 'email');
+      if (emailCol && emailCol.notnull === 1) {
+        console.log('Making client email optional...');
+        const allClientCols = clientColumns.map(col => col.name);
+        const colList = allClientCols.join(', ');
+        const colDefs = clientColumns.map(col => {
+          let def = `${col.name} ${col.type || 'TEXT'}`;
+          if (col.name === 'id') return 'id INTEGER PRIMARY KEY AUTOINCREMENT';
+          if (col.name === 'email') return "email TEXT DEFAULT ''";
+          if (col.name === 'name') return 'name TEXT NOT NULL';
+          if (col.dflt_value !== null) def += ` DEFAULT ${col.dflt_value}`;
+          return def;
+        }).join(',\n            ');
+        db.exec(`
+          CREATE TABLE clients_new (
+            ${colDefs}
+          );
+          INSERT INTO clients_new (${colList}) SELECT ${colList} FROM clients;
+          DROP TABLE clients;
+          ALTER TABLE clients_new RENAME TO clients;
+        `);
+        db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_clients_customer_number ON clients(customer_number) WHERE customer_number IS NOT NULL');
+        db.exec('CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email)');
+        db.exec('CREATE INDEX IF NOT EXISTS idx_clients_name ON clients(name)');
+        console.log('✓ Client email is now optional');
+      }
+    } catch (e) {
+      console.warn('Email optional migration failed (non-fatal):', e.message);
     }
 
     // Check if item_number column exists in saved_items table
@@ -385,33 +386,40 @@ const runMigrations = () => {
       console.log('✓ All enhanced invoice client snapshot columns already exist');
     }
 
-    // Add type column to invoices table to distinguish invoices from quotes
-    console.log('Checking for type column in invoices table...');
-    const invoiceColumnsForType = db.pragma('table_info(invoices)');
-    const invoiceColumnNamesForType = invoiceColumnsForType.map(col => col.name);
-
-    if (!invoiceColumnNamesForType.includes('type')) {
-      console.log('Adding type column to invoices table...');
-      db.exec("ALTER TABLE invoices ADD COLUMN type TEXT DEFAULT 'invoice'");
-      console.log('✓ Added type column to invoices table');
-    } else {
-      console.log('✓ Type column already exists in invoices table');
+    // Add type column to invoices table
+    try {
+      const invoiceColumnsForType = db.pragma('table_info(invoices)').map(col => col.name);
+      if (!invoiceColumnsForType.includes('type')) {
+        console.log('Adding type column to invoices table...');
+        db.exec("ALTER TABLE invoices ADD COLUMN type TEXT DEFAULT 'invoice'");
+        console.log('✓ Added type column to invoices table');
+      }
+    } catch (e) {
+      console.warn('Type column migration failed (non-fatal):', e.message);
     }
 
-    // Add tax_rate column to invoices table to store the rate used at invoice time
-    const invoiceColsForTaxRate = db.pragma('table_info(invoices)').map(c => c.name);
-    if (!invoiceColsForTaxRate.includes('tax_rate')) {
-      console.log('Adding tax_rate column to invoices table...');
-      db.exec("ALTER TABLE invoices ADD COLUMN tax_rate REAL DEFAULT NULL");
-      console.log('✓ Added tax_rate column to invoices table');
+    // Add tax_rate column to invoices table
+    try {
+      const invoiceColsForTaxRate = db.pragma('table_info(invoices)').map(c => c.name);
+      if (!invoiceColsForTaxRate.includes('tax_rate')) {
+        console.log('Adding tax_rate column to invoices table...');
+        db.exec("ALTER TABLE invoices ADD COLUMN tax_rate REAL DEFAULT NULL");
+        console.log('✓ Added tax_rate column to invoices table');
+      }
+    } catch (e) {
+      console.warn('Invoice tax_rate migration failed (non-fatal):', e.message);
     }
 
     // Add tax_rate column to quotes table
-    const quoteColsForTaxRate = db.pragma('table_info(quotes)').map(c => c.name);
-    if (!quoteColsForTaxRate.includes('tax_rate')) {
-      console.log('Adding tax_rate column to quotes table...');
-      db.exec("ALTER TABLE quotes ADD COLUMN tax_rate REAL DEFAULT NULL");
-      console.log('✓ Added tax_rate column to quotes table');
+    try {
+      const quoteColsForTaxRate = db.pragma('table_info(quotes)').map(c => c.name);
+      if (!quoteColsForTaxRate.includes('tax_rate')) {
+        console.log('Adding tax_rate column to quotes table...');
+        db.exec("ALTER TABLE quotes ADD COLUMN tax_rate REAL DEFAULT NULL");
+        console.log('✓ Added tax_rate column to quotes table');
+      }
+    } catch (e) {
+      console.warn('Quote tax_rate migration failed (non-fatal):', e.message);
     }
 
     // Add client snapshot columns to quotes table
