@@ -114,13 +114,11 @@ const TRIAL_LIMITS = {
 // Trial duration in milliseconds (7 days)
 const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
-// Cache expiry for license server checks (7 days in ms)
-const LICENSE_CACHE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
-
 /**
  * Check if the license is currently active.
- * Returns true if: valid JWT token exists AND cache hasn't expired.
- * Falls back to trial mode if cache is stale and can't reach server.
+ * Returns true if the license has been activated. Once activated, the license
+ * is permanent — no cache expiry, no phone-home requirement.
+ * Only returns false if the license was explicitly revoked via a valid JWT.
  */
 function isLicenseActive() {
   const data = licenseStore.store;
@@ -129,7 +127,7 @@ function isLicenseActive() {
     return false;
   }
 
-  // Check if we have a JWT token and verify it
+  // Check if we have a JWT token and it says revoked
   if (data.licenseToken) {
     try {
       const decoded = jwt.verify(data.licenseToken, LICENSE_PUBLIC_KEY);
@@ -137,19 +135,11 @@ function isLicenseActive() {
         return false;
       }
     } catch (err) {
-      // Token invalid or expired — check if cache is still within grace period
+      // Token invalid or expired — license still valid, just can't verify revocation
     }
   }
 
-  // Check cache expiry — if last server check is too old, fall back to trial
-  if (data.lastServerCheck) {
-    const elapsed = Date.now() - new Date(data.lastServerCheck).getTime();
-    if (elapsed > LICENSE_CACHE_EXPIRY_MS) {
-      return false;
-    }
-  }
-
-  return data.activated === true;
+  return true;
 }
 
 /**
@@ -207,8 +197,9 @@ function enforceTrialLimit(resourceType) {
 }
 
 /**
- * Phone home to validate license on startup.
- * Updates cache timestamp. If server says revoked, deactivates locally.
+ * Best-effort license check on startup.
+ * If online: refreshes JWT token and handles revocation.
+ * If offline: silently skips — license remains active.
  */
 async function validateLicenseOnStartup() {
   const data = licenseStore.store;
