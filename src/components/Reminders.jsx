@@ -124,7 +124,7 @@ function Reminders() {
     setShowSendModal(true);
   };
 
-  const replaceVariables = async (text, invoice, client) => {
+  const replaceVariables = (text, invoice, client) => {
     if (!text) return '';
 
     return text
@@ -266,7 +266,7 @@ function Reminders() {
     </div>
   );
 
-  const renderSendReminders = async () => {
+  const renderSendReminders = () => {
     const totalReminders = invoicesNeedingReminders.length;
     const totalPages = Math.ceil(totalReminders / REMINDERS_PER_PAGE);
     const startIndex = (reminderPage - 1) * REMINDERS_PER_PAGE;
@@ -389,7 +389,7 @@ function Reminders() {
     );
   };
 
-  const renderHistory = async () => {
+  const renderHistory = () => {
     // Group reminders by invoice
     const groupedReminders = reminders.reduce((acc, reminder) => {
       const invoiceId = reminder.invoice_id;
