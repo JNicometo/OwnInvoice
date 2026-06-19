@@ -942,9 +942,12 @@ ipcMain.handle('pdf:saveInvoice', async (event, invoiceHtml, invoiceNumber) => {
       printBackground: true,
       landscape: false,
       pageSize: 'Letter',
+      displayHeaderFooter: true,
+      headerTemplate: '<span></span>',
+      footerTemplate: '<div style="width:100%;text-align:center;font-size:10px;color:#94a3b8;font-family:sans-serif;padding-top:4px;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
       margins: {
         top: 0.3,
-        bottom: 0.3,
+        bottom: 0.5,
         left: 0.3,
         right: 0.3
       }
@@ -992,9 +995,12 @@ ipcMain.handle('email:sendInvoice', async (event, emailData) => {
       printBackground: true,
       landscape: false,
       pageSize: 'Letter',
+      displayHeaderFooter: true,
+      headerTemplate: '<span></span>',
+      footerTemplate: '<div style="width:100%;text-align:center;font-size:10px;color:#94a3b8;font-family:sans-serif;padding-top:4px;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
       margins: {
         top: 0.3,
-        bottom: 0.3,
+        bottom: 0.5,
         left: 0.3,
         right: 0.3
       }
@@ -1050,6 +1056,49 @@ ipcMain.handle('email:sendInvoice', async (event, emailData) => {
     if (pdfWindow && !pdfWindow.isDestroyed()) {
       pdfWindow.close();
     }
+  }
+});
+
+// Send Test Email (verifies SMTP settings without an invoice)
+ipcMain.handle('email:sendTest', async (event, { settings }) => {
+  try {
+    // Validate SMTP settings
+    if (!settings.smtp_host || !settings.smtp_user || !settings.smtp_password) {
+      throw new Error('SMTP settings are incomplete. Host, username, and password are required.');
+    }
+
+    const recipient = settings.smtp_from_email || settings.smtp_user;
+
+    const mailOptions = {
+      from: settings.smtp_from_email
+        ? `"${settings.smtp_from_name || settings.company_name || 'OwnInvoice'}" <${settings.smtp_from_email}>`
+        : settings.smtp_user,
+      to: recipient,
+      subject: 'OwnInvoice Test Email',
+      text: 'Success! Your SMTP email settings are working correctly.\n\nThis is a test message sent from OwnInvoice.',
+      html: '<p><strong>Success!</strong> Your SMTP email settings are working correctly.</p><p>This is a test message sent from OwnInvoice.</p>'
+    };
+
+    const info = await sendMailWithFallback(settings, mailOptions);
+
+    console.log('Test email sent successfully:', info.messageId);
+    return {
+      success: true,
+      messageId: info.messageId,
+      message: `Test email sent to ${recipient}. Check your inbox.`
+    };
+
+  } catch (error) {
+    console.error('Error sending test email:', error);
+
+    let errorMessage = error.message;
+    if (error.code === 'EAUTH') {
+      errorMessage = 'Authentication failed. Please check your SMTP username and password.';
+    } else if (error.code === 'ENETWORK_BLOCKED') {
+      errorMessage = error.message;
+    }
+
+    throw new Error(errorMessage);
   }
 });
 

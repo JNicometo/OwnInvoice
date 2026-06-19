@@ -1892,6 +1892,15 @@ const getInvoice = (id) => {
 
   if (invoice) {
     invoice.items = getInvoiceItems(id);
+
+    // Reconcile payment status on every load — catches any out-of-sync
+    // statuses (floating-point drift, webhook timing, manual edits)
+    if (invoice.status !== 'draft') {
+      updateInvoiceStatusAfterPayment(id);
+      // Re-read the (possibly corrected) status
+      const fresh = db.prepare('SELECT status FROM invoices WHERE id = ?').get(id);
+      if (fresh) invoice.status = fresh.status;
+    }
   }
 
   return invoice;
@@ -2341,8 +2350,10 @@ const updateInvoiceStatusAfterPayment = (invoiceId) => {
 
   if (!invoice) return;
 
-  const totalPaid = (paymentsSum.total_paid || 0) + (creditsSum.total_credits || 0);
-  const invoiceTotal = invoice.total || 0;
+  // Round to 2 decimal places to avoid floating-point comparison issues
+  // (REAL columns in SQLite can produce values like 99.99999999 instead of 100.00)
+  const totalPaid = Math.round(((paymentsSum.total_paid || 0) + (creditsSum.total_credits || 0)) * 100) / 100;
+  const invoiceTotal = Math.round((invoice.total || 0) * 100) / 100;
 
   let newStatus = 'pending';
 

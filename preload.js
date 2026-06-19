@@ -122,6 +122,7 @@ contextBridge.exposeInMainWorld('electron', {
         'email:sendQuote',
         'email:sendInvoiceWithPayment',
         'email:sendReminder',
+        'email:sendTest',
         // Payment Gateway
         'payment:createStripePaymentLink',
         'payment:createPayPalPaymentLink',

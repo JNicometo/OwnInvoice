@@ -29,6 +29,8 @@ function App() {
   const [appError, setAppError] = useState('');
   const [confirmState, setConfirmState] = useState({ open: false, message: '', resolve: null });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const toastIdRef = useRef(0);
   const searchInputRef = useRef(null);
 
   const { getAllInvoices, getAllClients, getAllSavedItems, getSettings } = useDatabase();
@@ -128,6 +130,21 @@ function App() {
     });
     return () => { delete window.customConfirm; };
   }, []);
+
+  // Global toast notifications: window.showToast(message, type)
+  // type: 'error' | 'success' | 'info' (default 'error')
+  useEffect(() => {
+    window.showToast = (message, type = 'error') => {
+      const id = ++toastIdRef.current;
+      setToasts(prev => [...prev, { id, message: String(message), type }]);
+      setTimeout(() => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+      }, type === 'error' ? 8000 : 4000);
+    };
+    return () => { delete window.showToast; };
+  }, []);
+
+  const dismissToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
   // Dark mode support
   useEffect(() => {
@@ -409,6 +426,37 @@ function App() {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999, background: '#c00', color: '#fff', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>App error: {appError}</span>
           <button onClick={() => setAppError('')} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 18, fontWeight: 'bold' }}>✕</button>
+        </div>
+      )}
+      {/* Toast notifications */}
+      {toasts.length > 0 && (
+        <div style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 99998, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 380 }}>
+          {toasts.map(toast => (
+            <div
+              key={toast.id}
+              style={{
+                background: toast.type === 'success' ? '#16a34a' : toast.type === 'info' ? '#2563eb' : '#dc2626',
+                color: '#fff',
+                borderRadius: 8,
+                padding: '12px 16px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 12,
+                fontSize: 14,
+                lineHeight: 1.4
+              }}
+            >
+              <span style={{ wordBreak: 'break-word' }}>{toast.message}</span>
+              <button
+                onClick={() => dismissToast(toast.id)}
+                style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 16, fontWeight: 'bold', flexShrink: 0, padding: 0, lineHeight: 1 }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
         </div>
       )}
       {/* Sidebar */}

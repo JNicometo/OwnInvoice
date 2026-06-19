@@ -26,6 +26,7 @@ function Settings({ isLicensed, onLicenseChange }) {
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [machineId, setMachineId] = useState('');
   const [trialStatus, setTrialStatus] = useState(null);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
 
   const fileInputRef = useRef(null);
   const { getSettings, updateSettings } = useDatabase();
@@ -1330,6 +1331,41 @@ function Settings({ isLicensed, onLicenseChange }) {
                           Email address emails will be sent from
                         </p>
                       </div>
+                    </div>
+
+                    {/* Send Test Email */}
+                    <div className="mt-4 flex items-center space-x-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!formData.smtp_host || !formData.smtp_user || !formData.smtp_password) {
+                            window.showToast?.('Please fill in SMTP Host, Username, and Password first.');
+                            return;
+                          }
+                          setSendingTestEmail(true);
+                          try {
+                            const result = await window.electron.ipcRenderer.invoke('email:sendTest', { settings: formData });
+                            window.showToast?.(result.message || 'Test email sent! Check your inbox.', 'success');
+                          } catch (error) {
+                            console.error('Test email failed:', error);
+                            const msg = (error.message || 'Unknown error').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '');
+                            window.showToast?.('Test email failed: ' + msg);
+                          } finally {
+                            setSendingTestEmail(false);
+                          }
+                        }}
+                        disabled={sendingTestEmail}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          sendingTestEmail
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        {sendingTestEmail ? 'Sending...' : 'Send Test Email'}
+                      </button>
+                      <p className="text-xs text-gray-500">
+                        Sends a test message to your From Email (or SMTP username) to verify these settings work.
+                      </p>
                     </div>
                   </div>
 

@@ -185,6 +185,8 @@ CREATE TABLE IF NOT EXISTS clients (
   currency TEXT DEFAULT 'USD',
   language TEXT DEFAULT 'en',
   tags TEXT DEFAULT '',
+  -- Per-client tax rate (NULL = use global default)
+  tax_rate REAL DEFAULT NULL,
   -- Timestamps
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP

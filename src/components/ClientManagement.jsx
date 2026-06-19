@@ -143,7 +143,7 @@ function ClientManagement({ onNavigateToInvoices }) {
 
     } catch (error) {
       console.error('Error loading clients:', error);
-      console.error('Error: ' + error.message);
+      window.showToast?.('Failed to load clients: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -305,10 +305,22 @@ function ClientManagement({ onNavigateToInvoices }) {
       }
       await loadClients();
       handleCloseModal();
+      window.showToast?.(editingClient ? 'Client updated' : 'Client created', 'success');
     } catch (error) {
       console.error('Error saving client:', error);
-      const errorMessage = error.message || 'Unknown error occurred';
-      console.error('Error saving client: ' + errorMessage);
+      const rawMessage = error.message || 'Unknown error occurred';
+      // Translate database constraint errors into friendly messages
+      let friendlyMessage = 'Error saving client: ' + rawMessage;
+      if (/UNIQUE constraint failed/i.test(rawMessage)) {
+        if (/customer_number/i.test(rawMessage)) {
+          friendlyMessage = `Customer number "${formData.customer_number}" is already in use. Please choose a different one.`;
+          setErrors(prev => ({ ...prev, customer_number: 'This customer number is already in use' }));
+          setActiveTab('basic');
+        } else {
+          friendlyMessage = 'A client with these details already exists.';
+        }
+      }
+      window.showToast?.(friendlyMessage);
     }
   };
 
@@ -326,8 +338,10 @@ function ClientManagement({ onNavigateToInvoices }) {
     try {
       await deleteClient(id);
       await loadClients();
+      window.showToast?.(`Client "${name}" deleted`, 'success');
     } catch (error) {
-      console.error('Error deleting client: ' + error.message);
+      console.error('Error deleting client:', error);
+      window.showToast?.('Error deleting client: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -351,7 +365,7 @@ function ClientManagement({ onNavigateToInvoices }) {
 
   const handleSaveAddress = async () => {
     if (!addressFormData.label.trim()) {
-      console.error('Please enter a label for the address');
+      window.showToast?.('Please enter a label for the address');
       return;
     }
     if (!editingClient) return;
@@ -368,7 +382,7 @@ function ClientManagement({ onNavigateToInvoices }) {
       setEditingAddressId(null);
     } catch (err) {
       console.error('Error saving address:', err);
-      console.error('Error saving address: ' + err.message);
+      window.showToast?.('Error saving address: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -392,7 +406,7 @@ function ClientManagement({ onNavigateToInvoices }) {
       await loadClientAddresses(editingClient.id);
     } catch (err) {
       console.error('Error deleting address:', err);
-      console.error('Error deleting address: ' + err.message);
+      window.showToast?.('Error deleting address: ' + (err.message || 'Unknown error'));
     }
   };
 
@@ -407,7 +421,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     if (!file) return;
 
     if (!file.name.endsWith('.csv')) {
-      console.error('Please upload a CSV file');
+      window.showToast?.('Please upload a CSV file');
       return;
     }
 
@@ -423,7 +437,8 @@ function ClientManagement({ onNavigateToInvoices }) {
         validateCSVData(results.data);
       },
       error: (error) => {
-        console.error('Error parsing CSV: ' + error.message);
+        console.error('Error parsing CSV:', error);
+        window.showToast?.('Error parsing CSV: ' + error.message);
       }
     });
   };
@@ -435,7 +450,7 @@ function ClientManagement({ onNavigateToInvoices }) {
 
     // Check if headers exist
     if (data.length === 0) {
-      console.error('CSV file is empty');
+      window.showToast?.('CSV file is empty');
       return;
     }
 
@@ -443,7 +458,7 @@ function ClientManagement({ onNavigateToInvoices }) {
     const missingFields = requiredFields.filter(field => !headers.includes(field));
 
     if (missingFields.length > 0) {
-      console.error(`CSV file must have these columns: ${missingFields.join(', ')}`);
+      window.showToast?.(`CSV file must have these columns: ${missingFields.join(', ')}`);
       return;
     }
 
@@ -475,7 +490,7 @@ function ClientManagement({ onNavigateToInvoices }) {
 
   const handleImportCSV = async () => {
     if (csvData.length === 0) {
-      console.error('No valid records to import');
+      window.showToast?.('No valid records to import');
       return;
     }
 
@@ -517,16 +532,17 @@ function ClientManagement({ onNavigateToInvoices }) {
 
       let message = `Successfully imported ${imported} customer(s).`;
       if (skipped > 0) {
-        message += `\n${skipped} record(s) were skipped.`;
+        message += ` ${skipped} record(s) were skipped.`;
       }
       if (duplicates.length > 0) {
-        message += `\n\nDuplicate customer numbers: ${duplicates.join(', ')}`;
+        message += ` Duplicate customer numbers: ${duplicates.join(', ')}`;
       }
 
-      console.error(message);
+      window.showToast?.(message, skipped > 0 ? 'info' : 'success');
       handleCloseImportModal();
     } catch (error) {
-      console.error('Error importing CSV: ' + error.message);
+      console.error('Error importing CSV:', error);
+      window.showToast?.('Error importing CSV: ' + (error.message || 'Unknown error'));
     } finally {
       setImporting(false);
     }

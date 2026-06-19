@@ -122,12 +122,18 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
         <title>Invoice ${fullInvoice.invoice_number}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
+          html { height: 100%; }
           body {
             font-family: '${bodyFont}', system-ui, -apple-system, sans-serif;
             color: ${textPrimary};
             font-size: 12px;
             line-height: 1.5;
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
           }
+          .page-main { flex: 1 0 auto; }
+          .page-bottom { flex-shrink: 0; }
           .accent-line {
             height: 4px;
             background: linear-gradient(90deg, ${invoiceAccentColor} 0%, #7c3aed 100%);
@@ -249,12 +255,17 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
           }
           th.r, td.r { text-align: right; }
           th.c, td.c { text-align: center; }
+          thead { display: table-header-group; }
           tbody td {
             padding: 10px 12px;
             font-size: 11.5px;
             color: ${textPrimary};
             border-bottom: 1px solid #f1f5f9;
             vertical-align: top;
+          }
+          tbody tr {
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
           tbody tr:last-child td {
             border-bottom: 2px solid #e2e8f0;
@@ -364,14 +375,97 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
             font-size: 10px;
             color: ${textMuted};
           }
+          .payments-wrap {
+            page-break-inside: avoid;
+            padding: 10px 40px 0;
+          }
+          .payments-heading {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: ${invoiceAccentColor};
+            margin-bottom: 4px;
+          }
+          .payments-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+          }
+          .payments-table th {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: ${textSecondary};
+            padding: 4px 8px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+          }
+          .payments-table td {
+            font-size: 10.5px;
+            color: ${textPrimary};
+            padding: 3px 8px;
+            border-bottom: 1px solid #f1f5f9;
+          }
+          .payments-table .r { text-align: right; }
+          .balance-box {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0 40px;
+          }
+          .balance-stack {
+            width: 240px;
+          }
+          .b-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            font-size: 11px;
+          }
+          .b-row .b-label { color: ${textSecondary}; }
+          .b-row .b-val {
+            font-weight: 500;
+            color: ${textPrimary};
+            font-variant-numeric: tabular-nums;
+          }
+          .b-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 6px 0 0;
+            border-top: 2px solid ${invoiceAccentColor};
+            margin-top: 2px;
+          }
+          .b-total .b-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: ${headerColor};
+          }
+          .b-total .b-val {
+            font-size: 16px;
+            font-weight: 800;
+            color: ${invoiceAccentColor};
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.3px;
+          }
+          .totals-area { break-inside: avoid; page-break-inside: avoid; }
+          .payments-wrap { break-inside: avoid; page-break-inside: avoid; }
+          .bottom-row { break-inside: avoid; page-break-inside: avoid; }
+          .footer { break-inside: avoid; page-break-inside: avoid; }
           @media print {
             body { margin: 0; }
+            thead { display: table-header-group; }
+            tbody tr { break-inside: avoid; page-break-inside: avoid; }
           }
         </style>
       </head>
       <body>
         ${(settings?.show_accent_bar_on_invoice ?? 1) ? '<div class="accent-line"></div>' : ''}
 
+        <div class="page-main">
         <div class="header">
           <div>
             <div class="invoice-label">INVOICE</div>
@@ -529,12 +623,57 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
             ` : ''}
             <hr class="t-line">
             <div class="t-total">
-              <span class="t-label">Total Due</span>
+              <span class="t-label">${payments.length > 0 ? 'Invoice Total' : 'Total Due'}</span>
               <span class="t-val">${formatCurrency(fullInvoice?.total || 0)}</span>
             </div>
           </div>
         </div>
 
+        ${payments.length > 0 ? `
+        <div class="payments-wrap">
+          <div class="payments-heading">Payments Received</div>
+          <table class="payments-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Method</th>
+                <th>Reference</th>
+                <th class="r">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${payments.map(p => `
+                <tr>
+                  <td>${formatDate(p.payment_date)}</td>
+                  <td>${p.payment_method || '-'}</td>
+                  <td>${p.reference_number || '-'}</td>
+                  <td class="r" style="font-weight:600;">${formatCurrency(p.amount)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="balance-box" style="padding:0;">
+            <div class="balance-stack">
+              <div class="b-row">
+                <span class="b-label">Invoice Total</span>
+                <span class="b-val">${formatCurrency(fullInvoice?.total || 0)}</span>
+              </div>
+              <div class="b-row">
+                <span class="b-label">Amount Paid</span>
+                <span class="b-val" style="color:#16a34a;">-${formatCurrency(totalPaid)}</span>
+              </div>
+              <div class="b-total">
+                <span class="b-label">Balance Due</span>
+                <span class="b-val">${formatCurrency(Math.max(0, (fullInvoice?.total || 0) - totalPaid))}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        ` : ''}
+
+        </div><!-- end page-main -->
+
+        <div class="page-bottom">
         <div class="bottom-row">
           ${(fullInvoice?.notes && (settings?.show_notes_on_invoice ?? 1)) ? `
           <div class="bottom-item">
@@ -562,6 +701,7 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
           <div class="footer-info">${settings?.company_name || 'Your Company'}${settings?.company_email ? ` &middot; ${settings.company_email}` : ''}${settings?.company_website ? ` &middot; ${settings.company_website}` : ''}</div>
         </div>
         ` : ''}
+        </div><!-- end page-bottom -->
       </body>
       </html>
     `;
@@ -585,16 +725,20 @@ function InvoicePreview({ invoice, onClose, onEdit }) {
   };
 
   const handleOpenEmailModal = async () => {
+    // Use balance due (total minus payments) so resent invoices reflect payments
+    const balanceDue = Math.max(0, (fullInvoice?.total || 0) - totalPaid);
+    const amountForEmail = totalPaid > 0 ? balanceDue : (fullInvoice?.total || 0);
+
     // Populate email template variables
     const subject = (settings?.email_subject_template || 'Invoice {invoice_number} from {company_name}')
       .replace('{invoice_number}', fullInvoice?.invoice_number || '')
       .replace('{company_name}', settings?.company_name || '')
-      .replace('{total}', formatCurrency(fullInvoice?.total || 0));
+      .replace('{total}', formatCurrency(amountForEmail));
 
     const body = (settings?.email_body_template || 'Dear {client_name},\n\nPlease find attached invoice {invoice_number} for {total}.\n\nThank you for your business!\n\nBest regards,\n{company_name}')
       .replace('{client_name}', fullInvoice?.client_name || 'Valued Customer')
       .replace('{invoice_number}', fullInvoice?.invoice_number || '')
-      .replace('{total}', formatCurrency(fullInvoice?.total || 0))
+      .replace('{total}', formatCurrency(amountForEmail))
       .replace('{due_date}', formatDate(fullInvoice?.due_date || ''))
       .replace('{company_name}', settings?.company_name || '');
 
