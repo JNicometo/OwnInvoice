@@ -1,7 +1,8 @@
 # Dependencies
 node_modules/
-package-lock.json
 yarn.lock
+# package-lock.json is intentionally tracked: `npm ci` in CI requires it,
+# and it pins the exact dependency set that release builds are made from.
 
 # Build output
 dist/

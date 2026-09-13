@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     strategy:
+      # A failing macOS CI build must not cancel the Windows build that the
+      # release depends on.
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
@@ -33,6 +36,11 @@ jobs:
 
     - name: Build React app
       run: npm run build
+      env:
+        # Actions sets CI=true, which makes react-scripts promote every ESLint
+        # warning into a build error. The tree has pre-existing warnings, so
+        # keep this off until they are cleaned up.
+        CI: false
 
     - name: Build Electron app (macOS)
       if: matrix.platform == 'mac'
@@ -61,17 +69,22 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Run even if the (unused-for-release) macOS build fails
+    if: ${{ !cancelled() && startsWith(github.ref, 'refs/tags/v') }}
+    permissions:
+      contents: write
 
     steps:
     - name: Download all artifacts
       uses: actions/download-artifact@v4
 
+    # Only the Windows installer is attached here. CI macOS builds are unsigned
+    # and un-notarized (CSC_IDENTITY_AUTO_DISCOVERY: false), so the DMGs are
+    # built and notarized locally and uploaded to the release by hand.
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          OwnInvoice-macOS/*.dmg
           OwnInvoice-Windows/*.exe
         draft: false
         prerelease: false

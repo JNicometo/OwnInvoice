@@ -204,7 +204,15 @@ function Reminders() {
           <code className="bg-white px-2 py-1 rounded">{'{total}'}</code>
           <code className="bg-white px-2 py-1 rounded">{'{due_date}'}</code>
           <code className="bg-white px-2 py-1 rounded">{'{company_name}'}</code>
+          <code className="bg-white px-2 py-1 rounded">{'{balance_due}'}</code>
+          <code className="bg-white px-2 py-1 rounded">{'{amount_paid}'}</code>
+          <code className="bg-white px-2 py-1 rounded">{'{invoice_total}'}</code>
         </div>
+        <p className="mt-2 text-xs text-blue-700">
+          {'{total}'} is the amount still outstanding. On a partly-paid invoice that is the
+          remaining balance, not the original total &mdash; use {'{invoice_total}'} if you need
+          the full amount before payments.
+        </p>
       </div>
 
       {templates.length === 0 ? (

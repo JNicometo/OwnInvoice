@@ -25,6 +25,21 @@ const jwt = require('jsonwebtoken');
 const SMTP_FALLBACK_PORTS = [2525];
 const CONNECTION_ERROR_CODES = ['ESOCKET', 'ECONNECTION', 'ETIMEDOUT', 'ECONNREFUSED', 'EAI_AGAIN'];
 
+// Gmail, Yahoo and iCloud all display app passwords in four groups of four
+// ("abcd efgh ijkl mnop"), and users paste them exactly as shown. SMTP AUTH
+// transmits the string verbatim, so those spaces come back as a 535 EAUTH
+// "Username and Password not accepted".
+// Always trim; strip inner spaces only for that exact 4x4 alphanumeric shape,
+// so a genuine passphrase containing spaces is left alone.
+function normalizeSmtpPassword(password) {
+  if (typeof password !== 'string') return password;
+  const trimmed = password.trim();
+  if (/^[A-Za-z0-9]{4}(\s[A-Za-z0-9]{4}){3}$/.test(trimmed)) {
+    return trimmed.replace(/\s+/g, '');
+  }
+  return trimmed;
+}
+
 function createTransporter(settings, portOverride) {
   const port = portOverride || parseInt(settings.smtp_port) || 587;
   return nodemailer.createTransport({
@@ -32,8 +47,8 @@ function createTransporter(settings, portOverride) {
     port: port,
     secure: port === 465,
     auth: {
-      user: settings.smtp_user,
-      pass: settings.smtp_password,
+      user: (settings.smtp_user || '').trim(),
+      pass: normalizeSmtpPassword(settings.smtp_password),
     },
     tls: {
       rejectUnauthorized: false,
@@ -2796,6 +2811,13 @@ function generateReminderInvoiceHTML(invoice, settings) {
     return dt.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
   };
 
+  // Payments recorded against this invoice, so the emailed PDF shows the same
+  // balance the client sees in the app rather than the untouched total.
+  const invoicePayments = invoice?.payments || [];
+  const paidToDate = Math.round(
+    invoicePayments.reduce((sum, p) => sum + (p.amount || 0), 0) * 100
+  ) / 100;
+
   const bodyFont = settings?.body_font || 'Segoe UI';
   const headingFont = settings?.heading_font || bodyFont;
   const accent = settings?.invoice_accent_color || '#2563eb';
@@ -2844,6 +2866,19 @@ td.r{font-variant-numeric:tabular-nums}
 .t-total{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0 0}
 .t-total .t-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${headerColor}}
 .t-total .t-val{font-size:20px;font-weight:800;color:${accent};font-variant-numeric:tabular-nums;letter-spacing:-0.3px}
+.payments-wrap{padding:18px 40px 0;break-inside:avoid;page-break-inside:avoid}
+.payments-heading{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${accent};margin-bottom:6px}
+.payments-table{width:100%;border-collapse:collapse}
+.payments-table th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:${textSecondary};padding:7px 10px;border-bottom:1px solid #e2e8f0;text-align:left}
+.payments-table td{padding:7px 10px;font-size:11px;color:${textPrimary};border-bottom:1px solid #f1f5f9}
+.payments-table .r{text-align:right;font-variant-numeric:tabular-nums}
+.balance-area{display:flex;justify-content:flex-end;padding:10px 0 0}
+.balance-stack{width:260px}
+.b-row{display:flex;justify-content:space-between;padding:5px 0;font-size:11.5px}
+.b-row .b-label{color:${textSecondary}}.b-row .b-val{font-weight:500;color:${textPrimary};font-variant-numeric:tabular-nums}
+.b-total{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0 0;margin-top:4px;border-top:1px solid #e2e8f0}
+.b-total .b-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${headerColor}}
+.b-total .b-val{font-size:20px;font-weight:800;color:${accent};font-variant-numeric:tabular-nums;letter-spacing:-0.3px}
 .bottom-row{display:flex;gap:16px;padding:20px 40px 0}
 .bottom-item{flex:1;min-width:0;padding-top:12px;border-top:2px solid #f1f5f9}
 .bottom-item h4{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${accent};margin-bottom:5px}
@@ -2898,9 +2933,27 @@ td.r{font-variant-numeric:tabular-nums}
     ${invoice.discount_amount ? `<div class="t-row"><span class="t-label">Discount</span><span class="t-val">-${fmtCurrency(invoice.discount_amount)}</span></div>` : ''}
     <div class="t-row"><span class="t-label">Tax</span><span class="t-val">${fmtCurrency(invoice.tax)}</span></div>
     <hr class="t-line">
-    <div class="t-total"><span class="t-label">Total Due</span><span class="t-val">${fmtCurrency(invoice.total)}</span></div>
+    <div class="t-total"><span class="t-label">${invoicePayments.length > 0 ? 'Invoice Total' : 'Total Due'}</span><span class="t-val">${fmtCurrency(invoice.total)}</span></div>
   </div>
 </div>
+${invoicePayments.length > 0 ? `
+<div class="payments-wrap">
+  <div class="payments-heading">Payments Received</div>
+  <table class="payments-table">
+    <thead><tr><th>Date</th><th>Method</th><th>Reference</th><th class="r" style="width:96px">Amount</th></tr></thead>
+    <tbody>
+      ${invoicePayments.map(p => `<tr><td>${fmtDate(p.payment_date)}</td><td>${p.payment_method || '-'}</td><td>${p.reference_number || '-'}</td><td class="r" style="font-weight:600">${fmtCurrency(p.amount)}</td></tr>`).join('')}
+    </tbody>
+  </table>
+  <div class="balance-area">
+    <div class="balance-stack">
+      <div class="b-row"><span class="b-label">Invoice Total</span><span class="b-val">${fmtCurrency(invoice.total)}</span></div>
+      <div class="b-row"><span class="b-label">Amount Paid</span><span class="b-val" style="color:#16a34a">-${fmtCurrency(paidToDate)}</span></div>
+      <div class="b-total"><span class="b-label">Balance Due</span><span class="b-val">${fmtCurrency(Math.max(0, (invoice.total || 0) - paidToDate))}</span></div>
+    </div>
+  </div>
+</div>
+` : ''}
 ${invoice.notes ? `<div class="bottom-row"><div class="bottom-item"><h4>Notes</h4><p>${invoice.notes}</p></div></div>` : ''}
 <div class="footer">
   <div class="footer-thank">${settings?.invoice_footer || 'Thank you for your business!'}</div>
@@ -2941,21 +2994,44 @@ async function sendReminderEmail(invoice, template, client) {
       return false;
     }
 
-    // Replace template variables
-    const subject = template.subject
-      .replace('{invoice_number}', invoice.invoice_number)
-      .replace('{company_name}', settings.company_name || 'OwnInvoice')
-      .replace('{client_name}', client.name);
+    // Payments/credits already applied. getInvoicesNeedingReminders supplies
+    // these; fall back to a direct lookup for manually triggered sends.
+    const payments = db.getPaymentsByInvoice(invoice.id) || [];
+    const amountPaid = invoice.amount_paid != null
+      ? invoice.amount_paid
+      : Math.round(payments.reduce((sum, p) => sum + (p.amount || 0), 0) * 100) / 100;
+    const balanceDue = invoice.balance_due != null
+      ? Math.max(0, invoice.balance_due)
+      : Math.max(0, Math.round(((invoice.total || 0) - amountPaid) * 100) / 100);
 
-    const body = template.message
-      .replace('{invoice_number}', invoice.invoice_number)
-      .replace('{client_name}', client.name)
-      .replace('{total}', invoice.total.toFixed(2))
-      .replace('{due_date}', invoice.due_date)
-      .replace('{company_name}', settings.company_name || 'OwnInvoice');
+    // {total} resolves to the outstanding balance so existing templates read
+    // correctly once a deposit has been applied. On an unpaid invoice the
+    // balance equals the total, so wording is unchanged.
+    const vars = {
+      invoice_number: invoice.invoice_number,
+      client_name: client.name,
+      company_name: settings.company_name || 'OwnInvoice',
+      due_date: invoice.due_date,
+      total: balanceDue.toFixed(2),
+      balance_due: balanceDue.toFixed(2),
+      amount_paid: amountPaid.toFixed(2),
+      invoice_total: (invoice.total || 0).toFixed(2),
+    };
+
+    // Global match, so a variable used more than once in a template is fully
+    // substituted. Unknown placeholders are left alone rather than blanked.
+    const applyVars = (str) => (str || '').replace(
+      /\{(\w+)\}/g,
+      (match, key) => (Object.prototype.hasOwnProperty.call(vars, key) ? vars[key] : match)
+    );
+
+    const subject = applyVars(template.subject);
+    const body = applyVars(template.message);
 
     // Get the full invoice with items for PDF generation
     const fullInvoice = db.getInvoice(invoice.id);
+    // Attach payments so the PDF shows the same balance the client is being asked for
+    if (fullInvoice) fullInvoice.payments = payments;
 
     // Generate invoice PDF
     const pdfData = await generateInvoicePDF(fullInvoice, settings);

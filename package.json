@@ -1,6 +1,6 @@
 {
   "name": "invoicepro-desktop",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Professional desktop invoicing application built with Electron and React",
   "main": "electron.js",
   "homepage": "./",

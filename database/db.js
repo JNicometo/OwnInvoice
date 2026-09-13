@@ -2344,7 +2344,7 @@ const updateInvoiceStatusAfterPayment = (invoiceId) => {
   const db = getDatabase();
 
   // Get invoice total, sum of payments, and sum of applied credit notes
-  const invoice = db.prepare('SELECT total FROM invoices WHERE id = ?').get(invoiceId);
+  const invoice = db.prepare('SELECT total, status FROM invoices WHERE id = ?').get(invoiceId);
   const paymentsSum = db.prepare('SELECT COALESCE(SUM(amount), 0) as total_paid FROM payments WHERE invoice_id = ?').get(invoiceId);
   const creditsSum = db.prepare("SELECT COALESCE(SUM(total), 0) as total_credits FROM credit_notes WHERE invoice_id = ? AND status = 'applied'").get(invoiceId);
 
@@ -2362,6 +2362,11 @@ const updateInvoiceStatusAfterPayment = (invoiceId) => {
   } else if (totalPaid > 0 && totalPaid < invoiceTotal) {
     newStatus = 'partial';
   }
+
+  // A draft has not been issued to the client yet, so a part-payment must not
+  // promote it out of draft — that would silently enrol it in the automatic
+  // reminder run. Paying one off in full is still an explicit enough signal.
+  if (invoice.status === 'draft' && newStatus !== 'paid') return;
 
   // Update the invoice status
   db.prepare('UPDATE invoices SET status = ? WHERE id = ?').run(newStatus, invoiceId);
@@ -3182,6 +3187,11 @@ const deleteInvoiceReminder = (id) => {
   return db.prepare('DELETE FROM invoice_reminders WHERE id = ?').run(id);
 };
 
+// Days of quiet after a payment lands before automatic reminders resume.
+// Without this, recording a deposit on an already-overdue invoice fires a
+// chasing email at the client within hours of them paying.
+const PAYMENT_GRACE_DAYS = 7;
+
 // Get invoices that need reminders
 const getInvoicesNeedingReminders = () => {
   const db = getDatabase();
@@ -3193,18 +3203,38 @@ const getInvoicesNeedingReminders = () => {
   ).get();
   const daysAhead = (maxBefore && maxBefore.max_days) || 7;
 
+  // amount_paid / balance_due are exposed so the reminder email and its PDF
+  // quote what the client actually still owes rather than the invoice total.
   return db.prepare(`
-    SELECT i.*, c.name as client_name, c.email as client_email
+    SELECT i.*,
+           c.name as client_name,
+           c.email as client_email,
+           ROUND(COALESCE(p.amount_paid, 0) + COALESCE(cn.credits_applied, 0), 2) as amount_paid,
+           ROUND(i.total - COALESCE(p.amount_paid, 0) - COALESCE(cn.credits_applied, 0), 2) as balance_due,
+           p.last_payment_date as last_payment_date
     FROM invoices i
     LEFT JOIN clients c ON i.client_id = c.id
+    LEFT JOIN (
+      SELECT invoice_id, SUM(amount) as amount_paid, MAX(payment_date) as last_payment_date
+      FROM payments GROUP BY invoice_id
+    ) p ON p.invoice_id = i.id
+    LEFT JOIN (
+      SELECT invoice_id, SUM(total) as credits_applied
+      FROM credit_notes WHERE status = 'applied' GROUP BY invoice_id
+    ) cn ON cn.invoice_id = i.id
     WHERE i.status IN ('pending', 'overdue', 'partial')
       AND i.archived = 0
+      -- Nothing left to chase (covers rounding drift on REAL columns)
+      AND ROUND(i.total - COALESCE(p.amount_paid, 0) - COALESCE(cn.credits_applied, 0), 2) > 0.005
+      -- Stay quiet for a while after the client pays something
+      AND (p.last_payment_date IS NULL
+           OR date(p.last_payment_date) < date(?, '-' || ? || ' days'))
       AND (
         (i.status IN ('overdue', 'partial') AND date(i.due_date) < date(?))
         OR (i.status = 'pending' AND date(i.due_date) <= date(?, '+' || ? || ' days'))
       )
     ORDER BY i.due_date ASC
-  `).all(today, today, daysAhead);
+  `).all(today, PAYMENT_GRACE_DAYS, today, today, daysAhead);
 };
 
 // Batch operations for invoices
