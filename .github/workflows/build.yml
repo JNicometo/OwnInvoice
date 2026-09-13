@@ -16,7 +16,7 @@ jobs:
         include:
           - os: macos-latest
             platform: mac
-          - os: windows-latest
+          - os: windows-2022   # windows-latest ships VS 2026, which node-gyp 11 cannot detect
             platform: win
 
     runs-on: ${{ matrix.os }}
